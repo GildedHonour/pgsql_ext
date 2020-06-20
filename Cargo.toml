@@ -1,0 +1,16 @@
+[package]
+name = "pgsql_ext"
+version = "0.1.0"
+authors = ["alex maslakoff <alex@serendipia.email>"]
+crate-type = ["dylib"]
+
+
+[lib]
+name = "pgsql_ext"
+crate-type = ["cdylib"]
+
+
+[dependencies]
+pgxr2 = { path = "../pgxr2" }
+uuid = { version = "0.8.1", features = ["v4"] }
+base64 = "0.12.2"
