@@ -67,27 +67,25 @@ pub extern "C" fn ex4_test(fcinfo: FunctionCallInfo) -> Datum {
               let a1 = get_var_size_4b(col_val_ptr);
               println!("VARSIZE_4B {:?}", a1);
 
+                      // let possible_size: usize = 10;
+                      // let a1 = std::slice::from_raw_parts(col_val_ptr2, possible_size);
+                      // println!("a1: {:?}", a1);
+                      // println!("a1 len: {:?}", a1.len());
+
+            
+                      // // base64
+                      // let a = b"hello world";
+                      // let b = "aGVsbG8gd29ybGQ=";
+
+                      // assert_eq!(encode(a), b);
+                      // assert_eq!(a, &decode(b).unwrap()[..]);
 
 
+                    // let b64_val = base64::encode(col_val);
+                    // let s3 = format!("column_value: {:?}", b64_val);
+                    // f.write_all(s3.as_bytes());
 
 
-              // let possible_size: usize = 10;
-              // let a1 = std::slice::from_raw_parts(col_val_ptr2, possible_size);
-              // println!("a1: {:?}", a1);
-              // println!("a1 len: {:?}", a1.len());
-
-    
-              // // base64
-              // let a = b"hello world";
-              // let b = "aGVsbG8gd29ybGQ=";
-
-              // assert_eq!(encode(a), b);
-              // assert_eq!(a, &decode(b).unwrap()[..]);
-
-
-            // let b64_val = base64::encode(col_val);
-            // let s3 = format!("column_value: {:?}", b64_val);
-            // f.write_all(s3.as_bytes());
             } else {
               println!("column_value is null");
             }
@@ -137,12 +135,12 @@ fn get_var_size_4b(ptr: Datum) -> u32 {
       ptr2.as_mut()
   };
 
-  //NOTE if something looks off, try to use pointer de-refferencing instead
+  // NOTE it works as is
+  // if something looks off, try to use pointer de-refferencing instead
   // (*ptr3).va_4byte
 
   let ptr33 = unsafe {
     ptr3.va_4byte.as_ref()
   };
-
   (ptr33.va_header >> SHIFT_VAL1) &  SHIFT_VAL2
 }
