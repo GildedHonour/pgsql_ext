@@ -16,6 +16,8 @@ use pgxr2::*;
 PG_MODULE_MAGIC!();
 PG_FUNCTION_INFO_V1!(pg_finfo_ex4_test);
 
+//NOTE: refactoring will be required once all works well
+
 #[no_mangle]
 pub extern "C" fn ex4_test(fcinfo: FunctionCallInfo) -> Datum {
   let res = unsafe {
