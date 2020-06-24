@@ -65,18 +65,42 @@ pub extern "C" fn ex4_test(fcinfo: FunctionCallInfo) -> Datum {
             let col_val_ptr: Datum = SPI_getbinval(ret_tuple, tup_desc, x + 1, &mut is_null);
             if !is_null {
 
-               //TODO
-              let col_val_ptr2 = &col_val_ptr as *const _;
-              let possible_size: usize = 10;
-              let a1 = std::slice::from_raw_parts(col_val_ptr2, possible_size);
-              println!("a1: {:?}", a1);
-              println!("a1 len: {:?}", a1.len());
-                        // // base64
-                        // let a = b"hello world";
-                        // let b = "aGVsbG8gd29ybGQ=";
+              //TODO
+              // let ptr1 = &col_val_ptr as *const _;
+              // let ptr1 = &col_val_ptr as *const varattrib_4b__bindgen_ty_1;
 
-                        // assert_eq!(encode(a), b);
-                        // assert_eq!(a, &decode(b).unwrap()[..]);
+              // let col_val_ptr2 = &col_val_ptr as *const _;
+              // let ptr11 = &col_val_ptr2 as *const varattrib_4b__bindgen_ty_1;
+
+
+              
+              let mut ptr2;
+              let ptr3 = unsafe {
+                  ptr2 = std::ptr::NonNull::new(
+                    col_val_ptr as *mut varattrib_4b__bindgen_ty_1
+                  ).unwrap();
+                  ptr2.as_mut()
+              };
+
+              println!("ptr3 {:?}", ptr3);
+
+
+
+
+
+
+              // let possible_size: usize = 10;
+              // let a1 = std::slice::from_raw_parts(col_val_ptr2, possible_size);
+              // println!("a1: {:?}", a1);
+              // println!("a1 len: {:?}", a1.len());
+
+    
+              // // base64
+              // let a = b"hello world";
+              // let b = "aGVsbG8gd29ybGQ=";
+
+              // assert_eq!(encode(a), b);
+              // assert_eq!(a, &decode(b).unwrap()[..]);
 
 
             // let b64_val = base64::encode(col_val);
