@@ -64,26 +64,8 @@ pub extern "C" fn ex4_test(fcinfo: FunctionCallInfo) -> Datum {
             let mut is_null: bool = true;
             let col_val_ptr: Datum = SPI_getbinval(ret_tuple, tup_desc, x + 1, &mut is_null);
             if !is_null {
-
-              //TODO
-              // let ptr1 = &col_val_ptr as *const _;
-              // let ptr1 = &col_val_ptr as *const varattrib_4b__bindgen_ty_1;
-
-              // let col_val_ptr2 = &col_val_ptr as *const _;
-              // let ptr11 = &col_val_ptr2 as *const varattrib_4b__bindgen_ty_1;
-
-
-              
-              let mut ptr2;
-              let ptr3 = unsafe {
-                  ptr2 = std::ptr::NonNull::new(
-                    col_val_ptr as *mut varattrib_4b__bindgen_ty_1
-                  ).unwrap();
-                  ptr2.as_mut()
-              };
-
-              println!("ptr3 {:?}", ptr3);
-
+              let a1 = get_var_size_4b(col_val_ptr);
+              println!("VARSIZE_4B {:?}", a1);
 
 
 
@@ -137,4 +119,30 @@ pub extern "C" fn ex4_test(fcinfo: FunctionCallInfo) -> Datum {
   };
 
   res as Datum
+}
+
+
+// implementation of C macro:
+// #define VARSIZE_4B(PTR)  ((((varattrib_4b *) (PTR))->va_4byte.va_header >> 2) & 0x3FFFFFFF)
+const SHIFT_VAL1: u32  = 2;
+const SHIFT_VAL2: u32 = 0x3FFFFFFF;
+fn get_var_size_4b(ptr: Datum) -> u32 {
+  //TODO refactor
+
+  let mut ptr2;
+  let ptr3 = unsafe {
+      ptr2 = std::ptr::NonNull::new(
+        ptr as *mut varattrib_4b
+      ).unwrap();
+      ptr2.as_mut()
+  };
+
+  //NOTE if something looks off, try to use pointer de-refferencing instead
+  // (*ptr3).va_4byte
+
+  let ptr33 = unsafe {
+    ptr3.va_4byte.as_ref()
+  };
+
+  (ptr33.va_header >> SHIFT_VAL1) &  SHIFT_VAL2
 }
