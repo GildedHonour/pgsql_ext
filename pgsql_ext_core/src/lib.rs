@@ -27,7 +27,7 @@ pub extern "C" fn ex4_test(fcinfo: FunctionCallInfo) -> Datum {
       let tup_desc: TupleDesc = (*(*trig_data).tg_relation).rd_att;
 
       let my_uuid = Uuid::new_v4();
-      let mut f = File::create(format!("/Users/alex/projects/rust/pgsql__workspace/project1/data/{}.txt", my_uuid)).unwrap();
+      let mut f = File::create(format!("/Users/alex/projects/rust/pgsql__workspace/rust_lang_ext__workspace/pgsql_ext_core/data/{}.txt", my_uuid)).unwrap();
 
       let col_num = (*tup_desc).natts;
       for x in 0..col_num {
@@ -86,8 +86,14 @@ pub extern "C" fn ex4_test(fcinfo: FunctionCallInfo) -> Datum {
           },
           _ => {
             println!("column_type == {}", col_type_str_slice);
-            let col_val: &CStr = CStr::from_ptr(SPI_getvalue(ret_tuple, tup_desc, x + 1));
-            let s3 = format!("column_value: {:?}", col_val);
+            let maybe_val = SPI_getvalue(ret_tuple, tup_desc, x + 1);
+            let s3 = if !maybe_val.is_null() {
+              let col_val: &CStr = CStr::from_ptr(maybe_val);
+              format!("column_value: {:?}", col_val)
+            } else {
+              format!("column_value: null")
+            };
+
             println!("{}", s3);
             f.write_all(s3.as_bytes());
           }
