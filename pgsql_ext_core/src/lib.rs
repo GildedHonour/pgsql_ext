@@ -16,6 +16,8 @@ use pgxr2::*;
 PG_MODULE_MAGIC!();
 PG_FUNCTION_INFO_V1!(pg_finfo_ex4_test);
 
+const VAR_HEADER_SIZE: usize = std::mem::size_of::<i32>();
+
 //NOTE: refactoring will be required once all works well
 
 #[no_mangle]
@@ -64,26 +66,38 @@ pub extern "C" fn ex4_test(fcinfo: FunctionCallInfo) -> Datum {
             let mut is_null: bool = true;
             let col_val_ptr: Datum = SPI_getbinval(ret_tuple, tup_desc, x + 1, &mut is_null);
             if !is_null {
-              let a1 = get_var_size_4b(col_val_ptr);
-              println!("VARSIZE_4B {:?}", a1);
+              let sz = get_var_size_4b(col_val_ptr);
+              println!("VARSIZE_4B {:?}", sz);
+              println!("VARSIZE_4B without header {:?}", sz - VAR_HEADER_SIZE);
 
-                      // let possible_size: usize = 10;
-                      // let a1 = std::slice::from_raw_parts(col_val_ptr2, possible_size);
-                      // println!("a1: {:?}", a1);
-                      // println!("a1 len: {:?}", a1.len());
+
+              let col_val_ptr2 = &(col_val_ptr + VAR_HEADER_SIZE) as *const usize;
+              // let elem_count = sz / std::mem::size_of::<usize>();
+
+              let a11 = std::slice::from_raw_parts(col_val_ptr2 , sz);
+              println!("a11 len {:?}", a11.len());
+
+
+              // re-create image, to reassure that no bytes get lost
+              // let mut f_test1 = File::create(format!("/Users/alex/projects/rust/pgsql__workspace/rust_lang_ext__workspace/pgsql_ext_core/data/{}.jpg", my_uuid)).unwrap();
+              //   f_test1.write_all(&[x2]);
+
+              //get_var_data_4b(...)
+
+ 
 
             
-                      // // base64
-                      // let a = b"hello world";
-                      // let b = "aGVsbG8gd29ybGQ=";
+              // // base64
+              // let a = b"hello world";
+              // let b = "aGVsbG8gd29ybGQ=";
 
-                      // assert_eq!(encode(a), b);
-                      // assert_eq!(a, &decode(b).unwrap()[..]);
+              // assert_eq!(encode(a), b);
+              // assert_eq!(a, &decode(b).unwrap()[..]);
 
 
-                    // let b64_val = base64::encode(col_val);
-                    // let s3 = format!("column_value: {:?}", b64_val);
-                    // f.write_all(s3.as_bytes());
+            // let b64_val = base64::encode(col_val);
+            // let s3 = format!("column_value: {:?}", b64_val);
+            // f.write_all(s3.as_bytes());
 
 
             } else {
@@ -124,7 +138,7 @@ pub extern "C" fn ex4_test(fcinfo: FunctionCallInfo) -> Datum {
 // #define VARSIZE_4B(PTR)  ((((varattrib_4b *) (PTR))->va_4byte.va_header >> 2) & 0x3FFFFFFF)
 const SHIFT_VAL1: u32  = 2;
 const SHIFT_VAL2: u32 = 0x3FFFFFFF;
-fn get_var_size_4b(ptr: Datum) -> u32 {
+fn get_var_size_4b(ptr: Datum) -> usize {
   //TODO refactor
 
   let mut ptr2;
@@ -142,5 +156,37 @@ fn get_var_size_4b(ptr: Datum) -> u32 {
   let ptr33 = unsafe {
     ptr3.va_4byte.as_ref()
   };
-  (ptr33.va_header >> SHIFT_VAL1) &  SHIFT_VAL2
+
+  ((ptr33.va_header >> SHIFT_VAL1) &  SHIFT_VAL2) as usize
 }
+
+// FIXME implement
+// fn get_var_data_4b(ptr: Datum) -> usize {
+//   //TODO refactor
+
+//   let mut ptr2;
+//   let ptr3 = unsafe {
+//       ptr2 = std::ptr::NonNull::new(
+//         ptr as *mut varattrib_4b
+//       ).unwrap();
+//       ptr2.as_mut()
+//   };
+
+//   // NOTE it works as is
+//   // if something looks off, try to use pointer de-refferencing instead
+//   // (*ptr3).va_4byte
+
+//   let ptr33 = unsafe {
+//     ptr3.va_4byte.as_ref()
+//   };
+
+//   ptr33.va_data.as_ptr() as usize
+// }
+
+/*
+  INFO
+
+  #define VARDATA(PTR)        VARDATA_4B(PTR)
+  #define VARDATA_4B (PTR)    (((varattrib_4b *) (PTR))->va_4byte.va_data)
+
+*/

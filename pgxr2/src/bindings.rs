@@ -69470,3 +69470,11 @@ pub struct IndexAmRoutine {
 pub struct PgStat_TableStatus {
     pub _address: u8,
 }
+
+/*
+  TODO
+  extern "C" {
+    #define VARSIZE_4B(PTR)  ((((varattrib_4b *) (PTR))->va_4byte.va_header >> 2) & 0x3FFFFFFF)
+    
+  }
+*/
