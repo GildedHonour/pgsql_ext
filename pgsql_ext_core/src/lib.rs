@@ -20,6 +20,7 @@ PG_FUNCTION_INFO_V1!(pg_finfo_ex4_test);
 
 #[no_mangle]
 pub extern "C" fn ex4_test(fcinfo: FunctionCallInfo) -> Datum {
+
     // FIXME vk: add elog AND/OR return String Datum with error message
     let trig_data: *const TriggerData = unsafe { (*fcinfo).context as *const TriggerData };
     if trig_data.is_null() {
@@ -35,6 +36,12 @@ pub extern "C" fn ex4_test(fcinfo: FunctionCallInfo) -> Datum {
 
     f.write_all(format!("[{}]\n", t.SPI_getrelname()).as_bytes());
 
+    unsafe {
+        let a = SPI_processed;
+        let b = SPI_tuptable;
+        f.write_all(format!("[RUST_DEBUG]: {:?} {:?}\n", a, b).as_bytes());
+    }
+
     for x in 0..t.col_num {
         //1 - column name
         let att = t.att_name(x);
@@ -45,7 +52,7 @@ pub extern "C" fn ex4_test(fcinfo: FunctionCallInfo) -> Datum {
             .filter(|x| *x != 0)
             .map(|x| x as char)
             .collect();
-        let s1 = format!("column_name: {:?}", col_name);
+        let s1 = format!("column_name: {}", col_name);
         println!("{}", s1);
         f.write_all(s1.as_bytes());
         f.write_all(b"\r\n");
@@ -60,50 +67,47 @@ pub extern "C" fn ex4_test(fcinfo: FunctionCallInfo) -> Datum {
         //3 - column value
         let col_type_str_slice: &str = col_type.as_str();
         match col_type_str_slice {
-          _ if col_type_str_slice == "bytea" => {
-            println!("column_type == bytea");
-            let mut is_null: bool = true;
-            let col_val_ptr: Datum = SPI_getbinval(ret_tuple, tup_desc, x + 1, &mut is_null);
-            if !is_null {
-              let a1 = get_var_size_4b(col_val_ptr);
-              println!("VARSIZE_4B {:?}", a1);
+            _ if col_type_str_slice == "bytea" => {
+                println!("column_type == bytea");
+                let mut is_null: bool = true;
+                let col_val_ptr: Datum =
+                    unsafe { SPI_getbinval(t.ret_tuple, t.tup_desc, x + 1, &mut is_null) };
+                if !is_null {
+                    let a1 = get_var_size_4b(col_val_ptr);
+                    println!("VARSIZE_4B {:?}", a1);
 
-                      // let possible_size: usize = 10;
-                      // let a1 = std::slice::from_raw_parts(col_val_ptr2, possible_size);
-                      // println!("a1: {:?}", a1);
-                      // println!("a1 len: {:?}", a1.len());
+                // let possible_size: usize = 10;
+                // let a1 = std::slice::from_raw_parts(col_val_ptr2, possible_size);
+                // println!("a1: {:?}", a1);
+                // println!("a1 len: {:?}", a1.len());
 
+                // // base64
+                // let a = b"hello world";
+                // let b = "aGVsbG8gd29ybGQ=";
 
-                      // // base64
-                      // let a = b"hello world";
-                      // let b = "aGVsbG8gd29ybGQ=";
+                // assert_eq!(encode(a), b);
+                // assert_eq!(a, &decode(b).unwrap()[..]);
 
-                      // assert_eq!(encode(a), b);
-                      // assert_eq!(a, &decode(b).unwrap()[..]);
-
-
-                    // let b64_val = base64::encode(col_val);
-                    // let s3 = format!("column_value: {:?}", b64_val);
-                    // f.write_all(s3.as_bytes());
-
-
-            } else {
-              println!("column_value is null");
+                // let b64_val = base64::encode(col_val);
+                // let s3 = format!("column_value: {:?}", b64_val);
+                // f.write_all(s3.as_bytes());
+                } else {
+                    println!("column_value is null");
+                }
             }
-          },
-          _ => {
-            println!("column_type == {}", col_type_str_slice);
-            let maybe_val = SPI_getvalue(ret_tuple, tup_desc, x + 1);
-            let s3 = if !maybe_val.is_null() {
-              let col_val: &CStr = CStr::from_ptr(maybe_val);
-              format!("column_value: {:?}", col_val)
-            } else {
-              format!("column_value: null")
-            };
+            _ => {
+                println!("column_type == {}", col_type_str_slice);
+                let maybe_val = unsafe { SPI_getvalue(t.ret_tuple, t.tup_desc, x + 1) };
+                let s3 = if !maybe_val.is_null() {
+                    let col_val: &CStr = unsafe { CStr::from_ptr(maybe_val) };
+                    format!("column_value: {:?}", col_val)
+                } else {
+                    format!("column_value: null")
+                };
 
-            println!("{}", s3);
-            f.write_all(s3.as_bytes());
-          }
+                println!("{}", s3);
+                f.write_all(s3.as_bytes());
+            }
         }
 
         println!("\r\n");
@@ -118,7 +122,7 @@ struct TrigData {
     ret_tuple: HeapTuple,
     rel: Relation,
     tup_desc: TupleDesc,
-    col_num: i32
+    col_num: i32,
 }
 
 impl TrigData {
@@ -134,7 +138,7 @@ impl TrigData {
                 ret_tuple,
                 rel,
                 tup_desc,
-                col_num
+                col_num,
             }
         }
     }
@@ -144,39 +148,35 @@ impl TrigData {
     }
 
     fn SPI_getrelname(&self) -> String {
-        unsafe {
-            CStr::from_ptr(SPI_getrelname(self.rel))
-        }.to_string_lossy().into_owned()
+        unsafe { CStr::from_ptr(SPI_getrelname(self.rel)) }
+            .to_string_lossy()
+            .into_owned()
     }
 
     fn SPI_gettype(&self, x: i32) -> String {
-        unsafe {
-            CStr::from_ptr(SPI_gettype(self.tup_desc, x + 1))
-        }.to_string_lossy().into_owned()
+        unsafe { CStr::from_ptr(SPI_gettype(self.tup_desc, x + 1)) }
+            .to_string_lossy()
+            .into_owned()
     }
-
+}
 
 // implementation of C macro:
 // #define VARSIZE_4B(PTR)  ((((varattrib_4b *) (PTR))->va_4byte.va_header >> 2) & 0x3FFFFFFF)
-const SHIFT_VAL1: u32  = 2;
+const SHIFT_VAL1: u32 = 2;
 const SHIFT_VAL2: u32 = 0x3FFFFFFF;
 fn get_var_size_4b(ptr: Datum) -> u32 {
-  //TODO refactor
+    //TODO refactor
 
-  let mut ptr2;
-  let ptr3 = unsafe {
-      ptr2 = std::ptr::NonNull::new(
-        ptr as *mut varattrib_4b
-      ).unwrap();
-      ptr2.as_mut()
-  };
+    let mut ptr2;
+    let ptr3 = unsafe {
+        ptr2 = std::ptr::NonNull::new(ptr as *mut varattrib_4b).unwrap();
+        ptr2.as_mut()
+    };
 
-  // NOTE it works as is
-  // if something looks off, try to use pointer de-refferencing instead
-  // (*ptr3).va_4byte
+    // NOTE it works as is
+    // if something looks off, try to use pointer de-refferencing instead
+    // (*ptr3).va_4byte
 
-  let ptr33 = unsafe {
-    ptr3.va_4byte.as_ref()
-  };
-  (ptr33.va_header >> SHIFT_VAL1) &  SHIFT_VAL2
+    let ptr33 = unsafe { ptr3.va_4byte.as_ref() };
+    (ptr33.va_header >> SHIFT_VAL1) & SHIFT_VAL2
 }

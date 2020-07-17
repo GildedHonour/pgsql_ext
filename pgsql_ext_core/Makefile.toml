@@ -21,7 +21,7 @@ tmp_data=/tmp/data
 sudo cp target/release/libpgsql_ext.so /usr/lib/postgresql/12/lib/
 mkdir -p $tmp_data
 chmod a+rwx $tmp_data
-sudo rm $tmp_data/*
+sudo rm -f $tmp_data/*
 psql -c "INSERT INTO table1 (my_text, my_jsonb) VALUES ('test_v3', '{}');"
 sudo cat $(ls $tmp_data/*)
 '''
