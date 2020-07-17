@@ -37,9 +37,10 @@ pub extern "C" fn ex4_test(fcinfo: FunctionCallInfo) -> Datum {
     f.write_all(format!("[{}]\n", t.SPI_getrelname()).as_bytes());
 
     unsafe {
+        SPI_connect();
         let a = SPI_processed;
         let b = SPI_tuptable;
-        f.write_all(format!("[RUST_DEBUG]: {:?} {:?}\n", a, b).as_bytes());
+        f.write_all(format!("[RUST_SPI_DEBUG]: {:?} {:?}\n", a, b).as_bytes());
     }
 
     for x in 0..t.col_num {
