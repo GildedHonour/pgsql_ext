@@ -149,8 +149,6 @@ pub extern "C" fn ex4_test(fcinfo: FunctionCallInfo) -> Datum {
 
 
         let q_c_char2 = CString::new(q).unwrap();
-        // let c_world: *const ::std::os::raw::c_char = c_str.as_ptr() as *const c_char;
-
         let mut arg_types: [Oid; 1] = [OIDOID];
         let pk_plan = SPI_prepare(q_c_char2.as_ptr(), 1, arg_types.as_mut_ptr());
 
@@ -182,11 +180,6 @@ pub extern "C" fn ex4_test(fcinfo: FunctionCallInfo) -> Datum {
 
         let spi_f_res = SPI_finish();
         assert_eq!(spi_f_res, SPI_OK_FINISH as i32);
-
-
-
-
-
         println!("\r\n");
         f.write_all(b"\r\n\r\n");
       }
