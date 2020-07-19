@@ -1,0 +1,11 @@
+[package]
+name = "pgxr_12"
+version = "0.1.0"
+
+[lib]
+name = "pgxr_12"
+crate-type = ["rlib"]
+
+[build-dependencies]
+bindgen = "0.44.0"
+libc = "0.2.71"

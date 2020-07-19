@@ -11,6 +11,7 @@ crate-type = ["cdylib"]
 
 
 [dependencies]
-pgxr2 = { path = "../pgxr2" }
+pgxr_11 = { path = "../pgxr_11" }
+# pgxr_12 = { path = "../pgxr_12" }
 uuid = { version = "0.8.1", features = ["v4"] }
 base64 = "0.12.2"

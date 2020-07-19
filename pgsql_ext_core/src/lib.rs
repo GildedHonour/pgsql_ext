@@ -1,22 +1,32 @@
 #[macro_use]
-extern crate pgxr2;
+extern crate pgxr_11;
+
+// #[macro_use]
+// extern crate pgxr_12;
 extern crate uuid;
 extern crate base64;
 
 use std::fs::File;
 use std::io::Write;
-use std::ffi::CStr;
+use std::ffi::{CStr, CString};
 use std::str;
 
 use uuid::Uuid;
 use base64::{encode, decode};
-use pgxr2::bindings::*;
-use pgxr2::*;
+
+use pgxr_11::bindings::*;
+use pgxr_11::*;
+
+// use pgxr_12::bindings::*;
+// use pgxr_12::*;
+
+
+const OIDOID: Oid = 26;
+const VAR_HEADER_SIZE: usize = std::mem::size_of::<i32>();
 
 PG_MODULE_MAGIC!();
 PG_FUNCTION_INFO_V1!(pg_finfo_ex4_test);
 
-const VAR_HEADER_SIZE: usize = std::mem::size_of::<i32>();
 
 //NOTE: refactoring will be required once all works well
 
@@ -78,11 +88,16 @@ pub extern "C" fn ex4_test(fcinfo: FunctionCallInfo) -> Datum {
               println!("a11 len {:?}", a11.len());
 
 
-              // re-create image, to reassure that no bytes get lost
-              // let mut f_test1 = File::create(format!("/Users/alex/projects/rust/pgsql__workspace/rust_lang_ext__workspace/pgsql_ext_core/data/{}.jpg", my_uuid)).unwrap();
-              //   f_test1.write_all(&[x2]);
+              let a111 = get_var_data_4b(col_val_ptr);
+              println!("a111{:?}", a111);
 
-              //get_var_data_4b(...)
+
+              // re-create image, to reassure that no bytes get lost
+              let file_full_path = format!("/Users/alex/projects/rust/pgsql__workspace/rust_lang_ext__workspace/pgsql_ext_core/data/{}.jpg", my_uuid);
+
+              // let mut f_test1 = File::create(file_full_path).unwrap();
+              //   f_test1.write_all(&[x2]);
+              // let fp = fopen(&file_full_path, &"w");
 
  
 
@@ -119,6 +134,59 @@ pub extern "C" fn ex4_test(fcinfo: FunctionCallInfo) -> Datum {
           }
         }
 
+        //4 primary keys
+        let spi_c_res = SPI_connect();
+        assert_eq!(spi_c_res, SPI_OK_CONNECT as i32);
+
+        let q: &str = "SELECT a.attname
+          FROM pg_index i
+          JOIN pg_attribute a ON a.attrelid = i.indrelid
+          AND a.attnum = ANY(i.indkey)
+          WHERE i.indrelid = $1::regclass
+          AND i.indisprimary
+          ORDER BY a.attnum
+        ";
+
+
+        let q_c_char2 = CString::new(q).unwrap();
+        // let c_world: *const ::std::os::raw::c_char = c_str.as_ptr() as *const c_char;
+
+        let mut arg_types: [Oid; 1] = [OIDOID];
+        let pk_plan = SPI_prepare(q_c_char2.as_ptr(), 1, arg_types.as_mut_ptr());
+
+        let mut oid1 = (*(*trig_data).tg_relation).rd_id;
+        let mut values:[Datum; 1] = [oid1 as Datum];
+
+
+        let spi_sel_res = SPI_execute_plan(pk_plan, values.as_mut_ptr(), std::ptr::null(), false, 0);
+        assert_eq!(spi_sel_res, SPI_OK_SELECT as i32);
+        println!("[OK] SPI_OK_SELECT");
+
+        let a1 = (*SPI_tuptable).tupdesc;
+
+
+        for i in 0..SPI_processed {
+          let a2 = (*SPI_tuptable).vals;
+          format!("a2: {:?}", a2);
+        };
+
+
+                  // // exec_result = SPI_exec("????", 0);
+                  // // if ((SPI_processed > 0) && (SPI_tuptable != NULL)) {
+                  // //         elog(NOTICE, "SPI_tuptable is not NULL");
+                  // //         SPI_getvalue(SPI_tuptable->vals[0], SPI_tuptable->tupdesc, 1);
+                  // // }
+
+
+
+
+        let spi_f_res = SPI_finish();
+        assert_eq!(spi_f_res, SPI_OK_FINISH as i32);
+
+
+
+
+
         println!("\r\n");
         f.write_all(b"\r\n\r\n");
       }
@@ -154,34 +222,49 @@ fn get_var_size_4b(ptr: Datum) -> usize {
   // (*ptr3).va_4byte
 
   let ptr33 = unsafe {
+    //bindings.rs#123 -->  __BindgenUnionField
     ptr3.va_4byte.as_ref()
   };
 
   ((ptr33.va_header >> SHIFT_VAL1) &  SHIFT_VAL2) as usize
 }
 
+
+/*
+  #define VARDATA_4B(PTR)   (((varattrib_4b *) (PTR))->va_4byte.va_data)
+*/
 // FIXME implement
-// fn get_var_data_4b(ptr: Datum) -> usize {
-//   //TODO refactor
+fn get_var_data_4b(ptr: Datum) -> usize {
+  //TODO refactor
 
-//   let mut ptr2;
-//   let ptr3 = unsafe {
-//       ptr2 = std::ptr::NonNull::new(
-//         ptr as *mut varattrib_4b
-//       ).unwrap();
-//       ptr2.as_mut()
-//   };
+  let mut ptr2;
+  let ptr3 = unsafe {
+      ptr2 = std::ptr::NonNull::new(
+        ptr as *mut varattrib_4b
+      ).unwrap();
+      ptr2.as_mut()
+  };
 
-//   // NOTE it works as is
-//   // if something looks off, try to use pointer de-refferencing instead
-//   // (*ptr3).va_4byte
+  let ptr33 = unsafe {
+    // bindings.ru#11234 -> varattrib_4b
+    ptr3.va_4byte.as_ref()
+  };
 
-//   let ptr33 = unsafe {
-//     ptr3.va_4byte.as_ref()
-//   };
 
-//   ptr33.va_data.as_ptr() as usize
-// }
+  // bindings.ru#88 -> __IncompleteArrayField
+  let a1 = unsafe {
+    ptr33.va_data.as_ptr() 
+  };
+
+  // let a2 = unsafe {
+  //   ptr33.va_data.as_slice() 
+  // };
+
+
+  a1 as usize
+}
+
+
 
 /*
   INFO
