@@ -1,0 +1,33 @@
+SELECT a.attname
+FROM pg_index i
+JOIN pg_attribute a ON a.attrelid = i.indrelid
+AND a.attnum = ANY(i.indkey)
+WHERE i.indrelid = $1::regclass
+AND i.indisprimary
+ORDER BY a.attnum;
+
+------------
+
+Get Oid:
+
+SELECT 'table4'::regclass::oid;
+SELECT 'public.table4'::regclass::oid;
+
+------------
+
+SELECT a.attname
+FROM pg_index i
+JOIN pg_attribute a ON a.attrelid = i.indrelid
+AND a.attnum = ANY(i.indkey)
+WHERE i.indrelid = 57349::regclass
+AND i.indisprimary;
+
+===> 57349 is OID of a table
+
+===>
+
+ attname 
+---------
+ id
+ version
+(2 rows)

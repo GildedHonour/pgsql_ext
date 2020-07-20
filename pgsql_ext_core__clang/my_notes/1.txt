@@ -1,0 +1,55 @@
+template1=# insert into table1 (my_text, my_blob) values ('text123', pg_read_binary_file('/Users/alex/Pictures/agdj3db6pju41.png')::bytea);
+
+INFO:  insert tigger: data[1]: 719
+INFO:  insert tigger: data[2]: 718
+INFO:  insert tigger: data[3]: text123
+
+INFO:  insert tigger: data[5]: 2073559172
+INFO:  sizeof: data[5]: 8
+INFO:  VARSIZE: data[5]: 270160
+INFO:  sizeof: data[5_2]: 8
+INFO:  VARSIZE: data[5_2]: 270160
+INFO:  sizeof: data[5_3]: 8
+INFO:  VARSIZE: data[5_3]: 270160
+INFO:  VARSIZE_ANY_EXHDR: data[5_3]: 270156
+INFO:  VARHDRSZ: 4
+INFO:  -------------
+
+INFO:  tupdesc->natts: 5
+INFO:  tupdesc->tdtypeid: 57351
+INFO:  tupdesc->tdtypmod: -1
+INFO:  tupdesc->tdrefcount: 1
+INFO:  -------------
+
+INFO:  tupdesc->attrs[0] attrelid: e005
+INFO:  tupdesc->attrs[0] attname data: id
+INFO:  tupdesc->attrs[1] attname data: version
+INFO:  tupdesc->attrs[2] attname data: my_text
+INFO:  tupdesc->attrs[3] attname data: my_json
+INFO:  tupdesc->attrs[4] attname data: my_blob
+INFO:  -------------
+
+INFO:  SPI_gettype of tupdesc, col[0]: (null)
+INFO:  SPI_gettype of tupdesc, col[1]: int8
+INFO:  SPI_gettype of tupdesc, col[2]: int4
+INFO:  SPI_gettype of tupdesc, col[3]: text
+INFO:  SPI_gettype of tupdesc, col[4]: jsonb
+INFO:  SPI_gettype of tupdesc, col[5]: bytea
+INFO:  SPI_gettype of tupdesc, col[6]: (null)
+INFO:  SPI_gettype of tupdesc, col[7]: (null)
+INFO:  SPI_gettype of tupdesc, col[8]: (null)
+INFO:  SPI_gettype of tupdesc, col[9]: (null)
+INFO:  -------------
+
+INFO:  res1: not NULL
+INFO:  bms_num_members: 2
+INFO:  bms_next_member: 9
+INFO:  nwords: 1
+INFO:  words [0]: 1536
+INFO:  words [1]: 0
+INFO:  -------------
+
+INFO:  constraintOid: 57358
+INFO:  rd_pkindex: 57357
+INFO:  *rd_pkattr: 0
+INSERT 0 1
