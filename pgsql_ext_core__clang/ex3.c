@@ -52,6 +52,12 @@ Datum ex3_test(PG_FUNCTION_ARGS) {
         bool isnull1, isnull2, isnull3, isnull4, isnull5, isnull5_2, isnull5_3 = false;
         uint32 x = rettuple->t_len;
 
+        // config
+        char *path1 = GetConfigOptionByName("my_ext.data_dir_path1", NULL, false);
+        elog(INFO, "my_ext.data_dir_path1: %s", path1);
+
+
+
         //indexing begins at 1
         int32 att1 = DatumGetInt32(heap_getattr(rettuple, 1, tupdesc, &isnull1));
         int32 att2 = DatumGetInt32(heap_getattr(rettuple, 2, tupdesc, &isnull2));

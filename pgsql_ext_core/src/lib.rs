@@ -9,7 +9,9 @@ extern crate base64;
 use std::fs::File;
 use std::io::Write;
 use std::ffi::{CStr, CString};
+use std::os::raw::{c_char};
 use std::str;
+
 
 use uuid::Uuid;
 use base64::{encode, decode};
@@ -23,6 +25,7 @@ use pgxr_11::*;
 
 const OIDOID: Oid = 26;
 const VAR_HEADER_SIZE: usize = std::mem::size_of::<i32>();
+const CONFIG_DATA_PREFIX: &str = "my_ext";
 
 PG_MODULE_MAGIC!();
 PG_FUNCTION_INFO_V1!(pg_finfo_ex4_test);
@@ -36,6 +39,21 @@ pub extern "C" fn ex4_test(fcinfo: FunctionCallInfo) -> Datum {
     let trig_data: *const TriggerData = (*fcinfo).context as *const TriggerData;
     if !trig_data.is_null() {
       println!("[RUST_DEBUG]: called as a trigger");
+
+      //
+      // read config value
+      // postgresql.conf
+      // a key has to be in the format: 'prefix.value = 123'
+      //
+      let cfg_key_raw = CString::new(format!("{}.data_dir_path1", CONFIG_DATA_PREFIX)).unwrap();
+      let cfg_key: *const c_char = cfg_key_raw.as_ptr() as *const c_char;
+      let file_full_path_raw = GetConfigOptionByName(cfg_key, &mut std::ptr::null(), false);
+
+      let file_full_path_c_str: &CStr = unsafe { CStr::from_ptr(file_full_path_raw) };
+      let file_full_path: &str = file_full_path_c_str.to_str().unwrap();
+      println!("config > file_full_path: {}", file_full_path);
+
+
 
       let ret_tuple: HeapTuple = (*trig_data).tg_trigtuple;
       let tup_desc: TupleDesc = (*(*trig_data).tg_relation).rd_att;
@@ -93,16 +111,14 @@ pub extern "C" fn ex4_test(fcinfo: FunctionCallInfo) -> Datum {
 
 
               // re-create image, to reassure that no bytes get lost
-              let file_full_path = format!("/Users/alex/projects/rust/pgsql__workspace/rust_lang_ext__workspace/pgsql_ext_core/data/{}.jpg", my_uuid);
+              // let file_full_path = format!("/Users/alex/projects/rust/pgsql__workspace/rust_lang_ext__workspace/pgsql_ext_core/data/{}.jpg", my_uuid);
+
 
               // let mut f_test1 = File::create(file_full_path).unwrap();
               //   f_test1.write_all(&[x2]);
               // let fp = fopen(&file_full_path, &"w");
 
- 
-
-            
-              // // base64
+              // base64
               // let a = b"hello world";
               // let b = "aGVsbG8gd29ybGQ=";
 
@@ -135,6 +151,7 @@ pub extern "C" fn ex4_test(fcinfo: FunctionCallInfo) -> Datum {
         }
 
         //4 primary keys
+        /*
         let spi_c_res = SPI_connect();
         assert_eq!(spi_c_res, SPI_OK_CONNECT as i32);
 
@@ -146,7 +163,6 @@ pub extern "C" fn ex4_test(fcinfo: FunctionCallInfo) -> Datum {
           AND i.indisprimary
           ORDER BY a.attnum
         ";
-
 
         let q_c_char2 = CString::new(q).unwrap();
         let mut arg_types: [Oid; 1] = [OIDOID];
@@ -169,17 +185,17 @@ pub extern "C" fn ex4_test(fcinfo: FunctionCallInfo) -> Datum {
         };
 
 
-                  // // exec_result = SPI_exec("????", 0);
-                  // // if ((SPI_processed > 0) && (SPI_tuptable != NULL)) {
-                  // //         elog(NOTICE, "SPI_tuptable is not NULL");
-                  // //         SPI_getvalue(SPI_tuptable->vals[0], SPI_tuptable->tupdesc, 1);
-                  // // }
-
-
+        // exec_result = SPI_exec("????", 0);
+        // if ((SPI_processed > 0) && (SPI_tuptable != NULL)) {
+        //         elog(NOTICE, "SPI_tuptable is not NULL");
+        //         SPI_getvalue(SPI_tuptable->vals[0], SPI_tuptable->tupdesc, 1);
+        // }
 
 
         let spi_f_res = SPI_finish();
         assert_eq!(spi_f_res, SPI_OK_FINISH as i32);
+        */
+
         println!("\r\n");
         f.write_all(b"\r\n\r\n");
       }
