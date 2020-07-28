@@ -58,146 +58,160 @@ Datum ex3_test(PG_FUNCTION_ARGS) {
 
 
 
-        //indexing begins at 1
-        int32 att1 = DatumGetInt32(heap_getattr(rettuple, 1, tupdesc, &isnull1));
-        int32 att2 = DatumGetInt32(heap_getattr(rettuple, 2, tupdesc, &isnull2));
-        char *att3 = DatumGetCString(heap_getattr(rettuple, 3, tupdesc, &isnull3));
-        // char *att4 = DatumGetCString(heap_getattr(rettuple, 4, tupdesc, &isnull4));
-        // void *att5 = DatumGetCString(heap_getattr(rettuple, 5, tupdesc, &isnull5));
-
-        /*
-            If you have not looked at DatumGetVarBitP() and DatumGetByteaP(), that
-            will get you corresponding structure pointers from a Datum. Then check
-            src/backend/utils/adt/varbit.c and bytea_* functions from
-            src/backend/utils/adt/varlena.c to understand how those structures are
-            used.
-        */
-
-        // void *a1 = (void *) DatumGetByteaP(heap_getattr(rettuple, 5, tupdesc, &isnull5));
-        // bytea *a2 = DatumGetByteaP(heap_getattr(rettuple, 5, tupdesc, &isnull5));
-
-        // char * SPI_getvalue(HeapTuple row, TupleDesc rowdesc, int colnumber)
-        // Datum SPI_getbinval(HeapTuple row, TupleDesc rowdesc, int colnumber, bool * isnull)
-
-        void *att5 = (void *) DatumGetByteaP(heap_getattr(rettuple, 5, tupdesc, &isnull5));
-        bytea *att5_2 = DatumGetByteaP(heap_getattr(rettuple, 5, tupdesc, &isnull5_2));
-        bytea *att5_3 = SPI_getbinval(rettuple, tupdesc, 5, &isnull5_3);
 
 
-        if (!isnull1) {
-            elog(INFO, "insert tigger: data[1]: %d", att1);
-        }
-        else {
-            elog(INFO, "insert tigger: data[1]: NULL");
-        }
-
-        if (!isnull2) {
-            elog(INFO, "insert tigger: data[2]: %d", att2);
-        }
-        else {
-            elog(INFO, "insert tigger: data[2]: NULL");
-        }
-
-        if (!isnull3) {
-            elog(INFO, "insert tigger: data[3]: %s", att3);
-        }
-        else {
-            elog(INFO, "insert tigger: data[3]: NULL");
-        }
 
 
-        // if (!isnull4) {
-        //     elog(INFO, "insert tigger: data[4]: %s", att4);
+
+        // //indexing begins at 1
+        // int32 att1 = DatumGetInt32(heap_getattr(rettuple, 1, tupdesc, &isnull1));
+        // int32 att2 = DatumGetInt32(heap_getattr(rettuple, 2, tupdesc, &isnull2));
+        // char *att3 = DatumGetCString(heap_getattr(rettuple, 3, tupdesc, &isnull3));
+        // // char *att4 = DatumGetCString(heap_getattr(rettuple, 4, tupdesc, &isnull4));
+        // // void *att5 = DatumGetCString(heap_getattr(rettuple, 5, tupdesc, &isnull5));
+
+        // /*
+        //     If you have not looked at DatumGetVarBitP() and DatumGetByteaP(), that
+        //     will get you corresponding structure pointers from a Datum. Then check
+        //     src/backend/utils/adt/varbit.c and bytea_* functions from
+        //     src/backend/utils/adt/varlena.c to understand how those structures are
+        //     used.
+        // */
+
+        // // void *a1 = (void *) DatumGetByteaP(heap_getattr(rettuple, 5, tupdesc, &isnull5));
+        // // bytea *a2 = DatumGetByteaP(heap_getattr(rettuple, 5, tupdesc, &isnull5));
+
+        // // char * SPI_getvalue(HeapTuple row, TupleDesc rowdesc, int colnumber)
+        // // Datum SPI_getbinval(HeapTuple row, TupleDesc rowdesc, int colnumber, bool * isnull)
+
+        // void *att5 = (void *) DatumGetByteaP(heap_getattr(rettuple, 5, tupdesc, &isnull5));
+        // bytea *att5_2 = DatumGetByteaP(heap_getattr(rettuple, 5, tupdesc, &isnull5_2));
+        // bytea *att5_3 = SPI_getbinval(rettuple, tupdesc, 5, &isnull5_3);
+
+
+        // if (!isnull1) {
+        //     elog(INFO, "insert tigger: data[1]: %d", att1);
         // }
         // else {
-        //     elog(INFO, "insert tigger: data[4]: NULL");
+        //     elog(INFO, "insert tigger: data[1]: NULL");
+        // }
+
+        // if (!isnull2) {
+        //     elog(INFO, "insert tigger: data[2]: %d", att2);
+        // }
+        // else {
+        //     elog(INFO, "insert tigger: data[2]: NULL");
+        // }
+
+        // if (!isnull3) {
+        //     elog(INFO, "insert tigger: data[3]: %s", att3);
+        // }
+        // else {
+        //     elog(INFO, "insert tigger: data[3]: NULL");
         // }
 
 
-        if (!isnull5) {
-            elog(INFO, "insert tigger: data[5]: %u", att5);
-            elog(INFO, "sizeof: data[5]: %d", sizeof(att5));
-            elog(INFO, "VARSIZE: data[5]: %u", VARSIZE(att5));
-
-            elog(INFO, "sizeof: data[5_2]: %d", sizeof(att5_2));
-            elog(INFO, "VARSIZE: data[5_2]: %u", VARSIZE(att5_2));
-
-            elog(INFO, "sizeof: data[5_3]: %d", sizeof(att5_3));
-            elog(INFO, "VARSIZE: data[5_3]: %u", VARSIZE(att5_3));
+        // // if (!isnull4) {
+        // //     elog(INFO, "insert tigger: data[4]: %s", att4);
+        // // }
+        // // else {
+        // //     elog(INFO, "insert tigger: data[4]: NULL");
+        // // }
 
 
-            elog(INFO, "VARSIZE_ANY_EXHDR: data[5_3]: %u", VARSIZE_ANY_EXHDR(att5_3));
-            elog(INFO, "VARHDRSZ: %u", VARHDRSZ);
-            elog(INFO, "VARHDRSZ: %u", VARHDRSZ);
+        // if (!isnull5) {
+        //     elog(INFO, "insert tigger: data[5]: %u", att5);
+        //     elog(INFO, "sizeof: data[5]: %d", sizeof(att5));
+        //     elog(INFO, "VARSIZE: data[5]: %u", VARSIZE(att5));
+
+        //     elog(INFO, "sizeof: data[5_2]: %d", sizeof(att5_2));
+        //     elog(INFO, "VARSIZE: data[5_2]: %u", VARSIZE(att5_2));
+
+        //     elog(INFO, "sizeof: data[5_3]: %d", sizeof(att5_3));
+        //     elog(INFO, "VARSIZE: data[5_3]: %u", VARSIZE(att5_3));
 
 
-            char *uuid1 = generate_uuid();
-            char *path1 = "/Users/alex/projects/rust/pgsql__workspace/c_lang_examples/ex3/data_files/";
-            char *file_ext = ".jpg";
-            // char *file_ext = ".png";
-            char *file_full_path = (char *) malloc(strlen(uuid1) + strlen(path1) + strlen(file_ext) + 1);
-            strcpy(file_full_path, path1);
-            strcat(file_full_path, uuid1);
-            strcat(file_full_path, file_ext);
-
-            FILE *fp = fopen(file_full_path, "w");
-            fwrite((att5 + VARHDRSZ), 1, VARDATA(att5), fp);
-            // fwrite((att5 + VARHDRSZ), 4, VARDATA(att5), fp);
-            // fwrite((att5 + VARHDRSZ), 8, VARDATA(att5), fp);
-
-            fclose(fp);
+        //     elog(INFO, "VARSIZE_ANY_EXHDR: data[5_3]: %u", VARSIZE_ANY_EXHDR(att5_3));
+        //     elog(INFO, "VARHDRSZ: %u", VARHDRSZ);
+        //     elog(INFO, "VARHDRSZ: %u", VARHDRSZ);
 
 
-        }
-        else {
-            elog(INFO, "insert tigger: data[5]: NULL");
-        }
+        //     char *uuid1 = generate_uuid();
+        //     char *path1 = "/Users/alex/projects/rust/pgsql__workspace/c_lang_examples/ex3/data_files/";
+        //     char *file_ext = ".jpg";
+        //     // char *file_ext = ".png";
+        //     char *file_full_path = (char *) malloc(strlen(uuid1) + strlen(path1) + strlen(file_ext) + 1);
+        //     strcpy(file_full_path, path1);
+        //     strcat(file_full_path, uuid1);
+        //     strcat(file_full_path, file_ext);
 
-        //debug
-        elog(INFO, "-------------\r\n");
-        elog(INFO, "tupdesc->natts: %d", tupdesc->natts);
-        elog(INFO, "tupdesc->tdtypeid: %u", tupdesc->tdtypeid);
-        elog(INFO, "tupdesc->tdtypmod: %d", tupdesc->tdtypmod);
-        elog(INFO, "tupdesc->tdrefcount: %d", tupdesc->tdrefcount);
-        elog(INFO, "-------------\r\n");
+        //     FILE *fp = fopen(file_full_path, "w");
+        //     fwrite((att5 + VARHDRSZ), 1, VARDATA(att5), fp);
+        //     // fwrite((att5 + VARHDRSZ), 4, VARDATA(att5), fp);
+        //     // fwrite((att5 + VARHDRSZ), 8, VARDATA(att5), fp);
 
-        //column names
-        elog(INFO, "tupdesc->attrs[0] attrelid: %x", tupdesc->attrs[0].attrelid);
-        elog(INFO, "tupdesc->attrs[0] attname data: %s", tupdesc->attrs[0].attname.data);
-        elog(INFO, "tupdesc->attrs[1] attname data: %s", tupdesc->attrs[1].attname.data);
-        elog(INFO, "tupdesc->attrs[2] attname data: %s", tupdesc->attrs[2].attname.data);
-        elog(INFO, "tupdesc->attrs[3] attname data: %s", tupdesc->attrs[3].attname.data);
-        elog(INFO, "tupdesc->attrs[4] attname data: %s", tupdesc->attrs[4].attname.data);
-        elog(INFO, "-------------\r\n");
+        //     fclose(fp);
 
 
+        // }
+        // else {
+        //     elog(INFO, "insert tigger: data[5]: NULL");
+        // }
 
-        // select conrelid from pg_catalog.pg_constraint;
-        // 57349
-        elog(INFO, "trigdata->tg_relation->rd_id: %d", trigdata->tg_relation->rd_id);
+        // //debug
+        // elog(INFO, "-------------\r\n");
+        // elog(INFO, "tupdesc->natts: %d", tupdesc->natts);
+        // elog(INFO, "tupdesc->tdtypeid: %u", tupdesc->tdtypeid);
+        // elog(INFO, "tupdesc->tdtypmod: %d", tupdesc->tdtypmod);
+        // elog(INFO, "tupdesc->tdrefcount: %d", tupdesc->tdrefcount);
+        // elog(INFO, "-------------\r\n");
 
-        //select * from pg_catalog.pg_class where relname = 'table1';
-        elog(INFO, "trigdata->tg_relation->rd_rel->relname.data: %s", trigdata->tg_relation->rd_rel->relname.data);
+        // //column names
+        // elog(INFO, "tupdesc->attrs[0] attrelid: %x", tupdesc->attrs[0].attrelid);
+        // elog(INFO, "tupdesc->attrs[0] attname data: %s", tupdesc->attrs[0].attname.data);
+        // elog(INFO, "tupdesc->attrs[1] attname data: %s", tupdesc->attrs[1].attname.data);
+        // elog(INFO, "tupdesc->attrs[2] attname data: %s", tupdesc->attrs[2].attname.data);
+        // elog(INFO, "tupdesc->attrs[3] attname data: %s", tupdesc->attrs[3].attname.data);
+        // elog(INFO, "tupdesc->attrs[4] attname data: %s", tupdesc->attrs[4].attname.data);
+        // elog(INFO, "-------------\r\n");
 
-        // select conindid from pg_catalog.pg_constraint;
-        // 57357
-        elog(INFO, "trigdata->tg_relation->rd_pkindex: %d", trigdata->tg_relation->rd_pkindex);
-        elog(INFO, "-------------\r\n");
 
 
-        for (int i = 0; i < 10; i++) {
-            char *t = SPI_gettype(tupdesc, i);
-            elog(INFO, "SPI_gettype of tupdesc, col[%d]: %s", i, t);
-        }
-        elog(INFO, "-------------\r\n");
+        // // select conrelid from pg_catalog.pg_constraint;
+        // // 57349
+        // elog(INFO, "trigdata->tg_relation->rd_id: %d", trigdata->tg_relation->rd_id);
+
+        // //select * from pg_catalog.pg_class where relname = 'table1';
+        // elog(INFO, "trigdata->tg_relation->rd_rel->relname.data: %s", trigdata->tg_relation->rd_rel->relname.data);
+
+        // // select conindid from pg_catalog.pg_constraint;
+        // // 57357
+        // elog(INFO, "trigdata->tg_relation->rd_pkindex: %d", trigdata->tg_relation->rd_pkindex);
+        // elog(INFO, "-------------\r\n");
+
+
+        // for (int i = 0; i < 10; i++) {
+        //     char *t = SPI_gettype(tupdesc, i);
+        //     elog(INFO, "SPI_gettype of tupdesc, col[%d]: %s", i, t);
+        // }
+        // elog(INFO, "-------------\r\n");
+
+
+
+
+
+
+
+
 
 
         //primary keys
         // 
         Oid constraintOid;
-        Bitmapset *res1 = (Bitmapset*) get_primary_key_attnos(trigdata->tg_relation->rd_id, false, &constraintOid);
-        if (res1 != NULL) {
-            elog(INFO, "res1: not NULL");
+        Bitmapset *pkattnos = (Bitmapset*) get_primary_key_attnos(trigdata->tg_relation->rd_id, false, &constraintOid);
+        if (pkattnos != NULL) {
+            elog(INFO, "get_primary_key_attnos: not NULL");
+            /*
             elog(INFO, "bms_num_members: %d", bms_num_members(res1));
             elog(INFO, "bms_next_member: %d", bms_next_member(res1, 0));
             elog(INFO, "nwords: %d", res1->nwords);
@@ -218,13 +232,23 @@ Datum ex3_test(PG_FUNCTION_ARGS) {
 
 
             write_data_to_file();
+            */
+
+            //TODO
+            int i = -1;
+            while ((i = bms_next_member(pkattnos , i)) >= 0) {
+                /* do stuff with i */
+                /* you'll need to use i - FirstLowInvalidHeapAttributeNumber to get the pg_attribute.attnum */
+
+                elog(INFO, "bms_next_member > i: %d", i);
+            }
         } else {
             elog(INFO, "get_primary_key_attnos result NULL");
         }
 
-        write_data_to_file();
 
-        SPI_finish();
+
+        // SPI_finish();
      } else {
         elog(INFO, "non-insert trigger"); 
      }
