@@ -150,51 +150,33 @@ pub extern "C" fn ex4_test(fcinfo: FunctionCallInfo) -> Datum {
           }
         }
 
-        //4 primary keys
-        /*
-        let spi_c_res = SPI_connect();
-        assert_eq!(spi_c_res, SPI_OK_CONNECT as i32);
+        //4   primary keys2
+        let mut c_odi: Oid = 0;
+        let rd_id = (*(*trig_data).tg_relation).rd_id;
+        let pkattnos: *mut Bitmapset = get_primary_key_attnos(rd_id, false, &mut c_odi);
+        if !pkattnos.is_null() {
+          const initial_rel_id: i32 = -1;
+          let mut rel_id_i = bms_next_member(pkattnos, initial_rel_id);
+          while rel_id_i >= 0 {
+            let col_idx: i32  = rel_id_i + FirstLowInvalidHeapAttributeNumber;
+            println!("primary key col_idx: {}", col_idx);
 
-        let q: &str = "SELECT a.attname
-          FROM pg_index i
-          JOIN pg_attribute a ON a.attrelid = i.indrelid
-          AND a.attnum = ANY(i.indkey)
-          WHERE i.indrelid = $1::regclass
-          AND i.indisprimary
-          ORDER BY a.attnum
-        ";
+            rel_id_i = bms_next_member(pkattnos , rel_id_i);
+          }
 
-        let q_c_char2 = CString::new(q).unwrap();
-        let mut arg_types: [Oid; 1] = [OIDOID];
-        let pk_plan = SPI_prepare(q_c_char2.as_ptr(), 1, arg_types.as_mut_ptr());
-
-        let mut oid1 = (*(*trig_data).tg_relation).rd_id;
-        let mut values:[Datum; 1] = [oid1 as Datum];
+        } else {
+            println!("get_primary_key_attnos NUL");
+        }
 
 
-        let spi_sel_res = SPI_execute_plan(pk_plan, values.as_mut_ptr(), std::ptr::null(), false, 0);
-        assert_eq!(spi_sel_res, SPI_OK_SELECT as i32);
-        println!("[OK] SPI_OK_SELECT");
-
-        let a1 = (*SPI_tuptable).tupdesc;
 
 
-        for i in 0..SPI_processed {
-          let a2 = (*SPI_tuptable).vals;
-          format!("a2: {:?}", a2);
-        };
 
 
-        // exec_result = SPI_exec("????", 0);
-        // if ((SPI_processed > 0) && (SPI_tuptable != NULL)) {
-        //         elog(NOTICE, "SPI_tuptable is not NULL");
-        //         SPI_getvalue(SPI_tuptable->vals[0], SPI_tuptable->tupdesc, 1);
-        // }
 
 
-        let spi_f_res = SPI_finish();
-        assert_eq!(spi_f_res, SPI_OK_FINISH as i32);
-        */
+
+
 
         println!("\r\n");
         f.write_all(b"\r\n\r\n");

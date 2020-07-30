@@ -11,6 +11,7 @@
 #include "utils/guc.h" // GetConfigOptionByName
 #include "utils/elog.h"
 #include "access/htup_details.h"
+#include "access/sysattr.h"
 
 #include <string.h>
 #include <math.h>
@@ -23,8 +24,9 @@
 #include <time.h>
 #include <uuid/uuid.h>
 
+
+
 extern Bitmapset *get_primary_key_attnos(Oid relid, bool deferrableOk, Oid *constraintOid);
-extern bool bms_get_singleton_member(const Bitmapset *a, int *member);
 extern int bms_num_members(const Bitmapset *a);
 extern int bms_next_member(const Bitmapset *a, int prevbit);
 
@@ -210,7 +212,6 @@ Datum ex3_test(PG_FUNCTION_ARGS) {
         Oid constraintOid;
         Bitmapset *pkattnos = (Bitmapset*) get_primary_key_attnos(trigdata->tg_relation->rd_id, false, &constraintOid);
         if (pkattnos != NULL) {
-            elog(INFO, "get_primary_key_attnos: not NULL");
             /*
             elog(INFO, "bms_num_members: %d", bms_num_members(res1));
             elog(INFO, "bms_next_member: %d", bms_next_member(res1, 0));
@@ -235,12 +236,13 @@ Datum ex3_test(PG_FUNCTION_ARGS) {
             */
 
             //TODO
+            elog(INFO, "FirstLowInvalidHeapAttributeNumber: %d", FirstLowInvalidHeapAttributeNumber);
             int i = -1;
             while ((i = bms_next_member(pkattnos , i)) >= 0) {
                 /* do stuff with i */
                 /* you'll need to use i - FirstLowInvalidHeapAttributeNumber to get the pg_attribute.attnum */
-
-                elog(INFO, "bms_next_member > i: %d", i);
+                int col_idx = i + FirstLowInvalidHeapAttributeNumber;
+                elog(INFO, "primary key col_idx: %d", col_idx);
             }
         } else {
             elog(INFO, "get_primary_key_attnos result NULL");

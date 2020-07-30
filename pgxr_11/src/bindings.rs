@@ -2030,6 +2030,7 @@ pub const GUC_UNIT: u32 = 1044480;
 pub type Oid = ::std::os::raw::c_uint;
 pub type pg_int64 = ::std::os::raw::c_long;
 pub type va_list = __builtin_va_list;
+pub const FirstLowInvalidHeapAttributeNumber: i32 = -8;
 pub type __gnuc_va_list = __builtin_va_list;
 pub type __u_char = ::std::os::raw::c_uchar;
 pub type __u_short = ::std::os::raw::c_ushort;
@@ -69469,6 +69470,15 @@ pub struct IndexAmRoutine {
 #[derive(Debug, Copy, Clone)]
 pub struct PgStat_TableStatus {
     pub _address: u8,
+}
+
+extern "C" {
+    //Bitmapset *   get_primary_key_attnos (Oid relid, bool deferrableOk, Oid *constraintOid)
+    pub fn get_primary_key_attnos(
+        rel_id: Oid,
+        deferrable_ok: bool,
+        constraint_oid: *mut Oid
+    ) -> *mut Bitmapset; // TODO '*mut' or '*const' - unclear
 }
 
 /*
