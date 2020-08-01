@@ -1,8 +1,6 @@
-#[macro_use]
-extern crate pgxr_11;
+#[macro_use] extern crate pgxr_11;
+// #[macro_use] extern crate pgxr_12;
 
-// #[macro_use]
-// extern crate pgxr_12;
 extern crate uuid;
 extern crate base64;
 
@@ -12,18 +10,15 @@ use std::ffi::{CStr, CString};
 use std::os::raw::{c_char};
 use std::str;
 
-
 use uuid::Uuid;
 use base64::{encode, decode};
 
 use pgxr_11::bindings::*;
 use pgxr_11::*;
-
 // use pgxr_12::bindings::*;
 // use pgxr_12::*;
 
 
-const OIDOID: Oid = 26;
 const VAR_HEADER_SIZE: usize = std::mem::size_of::<i32>();
 const CONFIG_DATA_PREFIX: &str = "my_ext";
 
@@ -96,27 +91,33 @@ pub extern "C" fn ex4_test(fcinfo: FunctionCallInfo) -> Datum {
             if !is_null {
               let sz = get_var_size_4b(col_val_ptr);
               println!("VARSIZE_4B {:?}", sz);
-              println!("VARSIZE_4B without header {:?}", sz - VAR_HEADER_SIZE);
+              println!("VARSIZE_4B without header {:?}", sz - VAR_HEADER_SIZE); // actual size
 
 
               let col_val_ptr2 = &(col_val_ptr + VAR_HEADER_SIZE) as *const usize;
-              // let elem_count = sz / std::mem::size_of::<usize>();
-
               let a11 = std::slice::from_raw_parts(col_val_ptr2 , sz);
               println!("a11 len {:?}", a11.len());
 
+              let a11_1 = std::slice::from_raw_parts(col_val_ptr2 , sz - VAR_HEADER_SIZE);
+              println!("a11_1 len without header {:?}", a11_1.len());
 
-              let a111 = get_var_data_4b(col_val_ptr);
-              println!("a111{:?}", a111);
+              // let a2: *const i8 = get_var_data_4b(col_val_ptr);
+              let a2: *const u8 = get_var_data_4b(col_val_ptr);
+              println!("a2 {:?}", a2);
 
+              // let a2_1 = get_var_data_4b_2(col_val_ptr, sz - VAR_HEADER_SIZE);
+              // assert_eq!(a2_1.len(), sz - VAR_HEADER_SIZE);
+              // println!("[OK] a2_1 == (sz - VAR_HEADER_SIZE); {:?}", sz - VAR_HEADER_SIZE);
+
+              let a2_1 = ::std::slice::from_raw_parts(a2, sz - VAR_HEADER_SIZE);
+              let a2_2 = ::std::slice::from_raw_parts(a2, 10);
 
               // re-create image, to reassure that no bytes get lost
-              // let file_full_path = format!("/Users/alex/projects/rust/pgsql__workspace/rust_lang_ext__workspace/pgsql_ext_core/data/{}.jpg", my_uuid);
+              let file_full_path = format!("/Users/alex/projects/rust/pgsql__workspace/rust_lang_ext__workspace/pgsql_ext_core/data/{}.jpg", my_uuid);
+              let mut f1 = File::create(file_full_path).unwrap();
+              f1.write_all(a2_1).expect("unable to write binary data to file");
 
 
-              // let mut f_test1 = File::create(file_full_path).unwrap();
-              //   f_test1.write_all(&[x2]);
-              // let fp = fopen(&file_full_path, &"w");
 
               // base64
               // let a = b"hello world";
@@ -126,9 +127,9 @@ pub extern "C" fn ex4_test(fcinfo: FunctionCallInfo) -> Datum {
               // assert_eq!(a, &decode(b).unwrap()[..]);
 
 
-            // let b64_val = base64::encode(col_val);
-            // let s3 = format!("column_value: {:?}", b64_val);
-            // f.write_all(s3.as_bytes());
+            let b64_val = base64::encode(a2_2);
+            let s1 = format!("column_value: {:?}", b64_val);
+            println!("b64_val: {:?}", s1);
 
 
             } else {
@@ -150,7 +151,7 @@ pub extern "C" fn ex4_test(fcinfo: FunctionCallInfo) -> Datum {
           }
         }
 
-        //4   primary keys2
+        //4   primary keys
         let mut c_odi: Oid = 0;
         let rd_id = (*(*trig_data).tg_relation).rd_id;
         let pkattnos: *mut Bitmapset = get_primary_key_attnos(rd_id, false, &mut c_odi);
@@ -167,16 +168,6 @@ pub extern "C" fn ex4_test(fcinfo: FunctionCallInfo) -> Datum {
         } else {
             println!("get_primary_key_attnos NUL");
         }
-
-
-
-
-
-
-
-
-
-
 
         println!("\r\n");
         f.write_all(b"\r\n\r\n");
@@ -198,69 +189,42 @@ pub extern "C" fn ex4_test(fcinfo: FunctionCallInfo) -> Datum {
 const SHIFT_VAL1: u32  = 2;
 const SHIFT_VAL2: u32 = 0x3FFFFFFF;
 fn get_var_size_4b(ptr: Datum) -> usize {
-  //TODO refactor
-
-  let mut ptr2;
-  let ptr3 = unsafe {
-      ptr2 = std::ptr::NonNull::new(
-        ptr as *mut varattrib_4b
-      ).unwrap();
-      ptr2.as_mut()
+  let mut _ptr1;
+  let ptr1 = unsafe {
+      _ptr1 = std::ptr::NonNull::new(ptr as *mut varattrib_4b).unwrap();
+      _ptr1.as_mut()
   };
 
-  // NOTE it works as is
-  // if something looks off, try to use pointer de-refferencing instead
-  // (*ptr3).va_4byte
-
-  let ptr33 = unsafe {
+  // NOTE
+  // this works as is
+  // but if something begins to looks off, try to use pointer de-refferencing instead:
+  // (*ptr1).va_4byte
+  let ptr2 = unsafe {
     //bindings.rs#123 -->  __BindgenUnionField
-    ptr3.va_4byte.as_ref()
+    ptr1.va_4byte.as_ref()
   };
 
-  ((ptr33.va_header >> SHIFT_VAL1) &  SHIFT_VAL2) as usize
+  ((ptr2.va_header >> SHIFT_VAL1) &  SHIFT_VAL2) as usize
 }
 
 
-/*
-  #define VARDATA_4B(PTR)   (((varattrib_4b *) (PTR))->va_4byte.va_data)
-*/
-// FIXME implement
-fn get_var_data_4b(ptr: Datum) -> usize {
-  //TODO refactor
-
-  let mut ptr2;
-  let ptr3 = unsafe {
-      ptr2 = std::ptr::NonNull::new(
-        ptr as *mut varattrib_4b
-      ).unwrap();
-      ptr2.as_mut()
+//TODO -> *const i8
+fn get_var_data_4b(ptr: Datum) -> *const u8 {
+  let mut _ptr1;
+  let ptr1 = unsafe {
+      _ptr1 = std::ptr::NonNull::new(ptr as *mut varattrib_4b).unwrap();
+      _ptr1.as_mut()
   };
 
-  let ptr33 = unsafe {
+  let ptr2 = unsafe {
     // bindings.ru#11234 -> varattrib_4b
-    ptr3.va_4byte.as_ref()
+    ptr1.va_4byte.as_ref()
   };
 
-
+  let ptr3 = unsafe {
   // bindings.ru#88 -> __IncompleteArrayField
-  let a1 = unsafe {
-    ptr33.va_data.as_ptr() 
+    ptr2.va_data.as_ptr()
   };
 
-  // let a2 = unsafe {
-  //   ptr33.va_data.as_slice() 
-  // };
-
-
-  a1 as usize
+  ptr3 as *const u8
 }
-
-
-
-/*
-  INFO
-
-  #define VARDATA(PTR)        VARDATA_4B(PTR)
-  #define VARDATA_4B (PTR)    (((varattrib_4b *) (PTR))->va_4byte.va_data)
-
-*/
