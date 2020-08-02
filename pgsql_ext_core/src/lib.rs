@@ -51,16 +51,20 @@ pub extern "C" fn ex4_test(fcinfo: FunctionCallInfo) -> Datum {
       println!("config > file_full_path: {}", file_full_path);
 
 
+
       let ret_tuple: HeapTuple = (*trig_data).tg_trigtuple;
       let tup_desc: TupleDesc = (*(*trig_data).tg_relation).rd_att;
 
       let my_uuid = Uuid::new_v4();
+      //TODO read from config
       let mut dump_fl = File::create(format!("/Users/alex/projects/rust/pgsql__workspace/rust_lang_ext__workspace/pgsql_ext_core/data/{}.txt", my_uuid)).unwrap();
 
       let col_num = (*tup_desc).natts;
       for x in 0..col_num {
 
+        //
         //1 - column name
+        //
         let col_name: String = (*tup_desc).attrs.
           as_slice(col_num as usize)[x as usize].attname.data.
           iter().
@@ -74,7 +78,10 @@ pub extern "C" fn ex4_test(fcinfo: FunctionCallInfo) -> Datum {
         dump_fl.write_all(b"\r\n");
 
 
+
+        //
         //2 - column type
+        //
         let col_type: &CStr = CStr::from_ptr(SPI_gettype(tup_desc, x + 1));
         let s2 = format!("column_type: {:?}", col_type);
         println!("{}", s2);
@@ -82,7 +89,10 @@ pub extern "C" fn ex4_test(fcinfo: FunctionCallInfo) -> Datum {
         dump_fl.write_all(b"\r\n");
 
 
+
+        //
         //3 - column value
+        //
         let col_type_str_slice: &str = col_type.to_str().unwrap();
         match col_type_str_slice {
           _ if col_type_str_slice == "bytea" => {
@@ -92,9 +102,12 @@ pub extern "C" fn ex4_test(fcinfo: FunctionCallInfo) -> Datum {
             if !is_null {
               let sz = get_var_size_4b(col_val_ptr);
               let data_sz = sz - VAR_HEADER_SIZE;
-              // println!("VARSIZE_4B {:?}", sz);
-              // println!("VARSIZE_4B without header {:?}", sz - VAR_HEADER_SIZE); // actual size
 
+              /*
+              // for debugging
+
+              println!("VARSIZE_4B {:?}", sz);
+              println!("VARSIZE_4B without header {:?}", sz - VAR_HEADER_SIZE); // actual size
 
               let col_val_ptr2 = &(col_val_ptr + VAR_HEADER_SIZE) as *const usize;
               let a11 = std::slice::from_raw_parts(col_val_ptr2 , sz);
@@ -102,25 +115,31 @@ pub extern "C" fn ex4_test(fcinfo: FunctionCallInfo) -> Datum {
 
               let a11_1 = std::slice::from_raw_parts(col_val_ptr2 , sz - VAR_HEADER_SIZE);
               println!("a11_1 len without header {:?}", a11_1.len());
-
-              let a2: *const u8 = get_var_data_4b(col_val_ptr);
-              println!("a2 {:?}", a2);
+              */
 
 
+
+              let bin_data_ptr: *const u8 = get_var_data_4b(col_val_ptr);
 
               // re-create image, to reassure that no bytes get lost
               let img_file_full_path = format!("/Users/alex/projects/rust/pgsql__workspace/rust_lang_ext__workspace/pgsql_ext_core/data/{}.svg", my_uuid);
               let mut img_fl = File::create(img_file_full_path).unwrap();
-              let a2_1 = ::std::slice::from_raw_parts(a2, data_sz);
-              img_fl.write_all(a2_1).expect("unable to write binary data to file");
+              let bin_data_slice = ::std::slice::from_raw_parts(bin_data_ptr, data_sz);
+              img_fl.write_all(bin_data_slice).expect("unable to write binary data to file");
 
 
               //
               //base64
               //
-              let a2_2 = ::std::slice::from_raw_parts(a2, 10);
-              let b64_val = base64::encode(a2_2);
+
+
+              /*
+              // for debugging
+              let bin_slice1 = ::std::slice::from_raw_parts(bin_data_ptr, 10);
+              let b64_val = base64::encode(bin_slice1);
               println!("b64_val: {:?}", format!("column_value: {:?}", b64_val));
+              */
+
             } else {
               println!("column_value is null");
             }
@@ -140,7 +159,10 @@ pub extern "C" fn ex4_test(fcinfo: FunctionCallInfo) -> Datum {
           }
         }
 
+
+        //
         //4   primary keys
+        //
         let mut c_odi: Oid = 0;
         let rd_id = (*(*trig_data).tg_relation).rd_id;
         let pkattnos: *mut Bitmapset = get_primary_key_attnos(rd_id, false, &mut c_odi);
@@ -195,8 +217,6 @@ fn get_var_size_4b(ptr: Datum) -> usize {
   ((ptr2.va_header >> SHIFT_VAL1) &  SHIFT_VAL2) as usize
 }
 
-
-//TODO -> *const i8
 fn get_var_data_4b(ptr: Datum) -> *const u8 {
   let mut _ptr1;
   let ptr1 = unsafe {
