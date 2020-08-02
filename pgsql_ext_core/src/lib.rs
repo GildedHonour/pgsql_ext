@@ -141,7 +141,7 @@ pub extern "C" fn ex4_test(fcinfo: FunctionCallInfo) -> Datum {
               */
 
             } else {
-              println!("column_value is null");
+              println!("column_value: null");
             }
           },
           _ => {
