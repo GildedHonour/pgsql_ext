@@ -21,6 +21,8 @@ use pgxr_11::*;
 
 const VAR_HEADER_SIZE: usize = std::mem::size_of::<i32>();
 const CONFIG_DATA_PREFIX: &str = "my_ext";
+const PICTURE_FILE_NAME: &str = "picture1__1071_bytes.svg";
+const INITIAL_REL_ID: i32 = -1;
 
 PG_MODULE_MAGIC!();
 PG_FUNCTION_INFO_V1!(pg_finfo_ex4_test);
@@ -49,12 +51,11 @@ pub extern "C" fn ex4_test(fcinfo: FunctionCallInfo) -> Datum {
       println!("config > file_full_path: {}", file_full_path);
 
 
-
       let ret_tuple: HeapTuple = (*trig_data).tg_trigtuple;
       let tup_desc: TupleDesc = (*(*trig_data).tg_relation).rd_att;
 
       let my_uuid = Uuid::new_v4();
-      let mut f = File::create(format!("/Users/alex/projects/rust/pgsql__workspace/rust_lang_ext__workspace/pgsql_ext_core/data/{}.txt", my_uuid)).unwrap();
+      let mut dump_fl = File::create(format!("/Users/alex/projects/rust/pgsql__workspace/rust_lang_ext__workspace/pgsql_ext_core/data/{}.txt", my_uuid)).unwrap();
 
       let col_num = (*tup_desc).natts;
       for x in 0..col_num {
@@ -69,16 +70,16 @@ pub extern "C" fn ex4_test(fcinfo: FunctionCallInfo) -> Datum {
           collect();
         let s1 = format!("column_name: {:?}", col_name);
         println!("{}", s1);
-        f.write_all(s1.as_bytes());
-        f.write_all(b"\r\n");
+        dump_fl.write_all(s1.as_bytes());
+        dump_fl.write_all(b"\r\n");
 
 
         //2 - column type
         let col_type: &CStr = CStr::from_ptr(SPI_gettype(tup_desc, x + 1));
         let s2 = format!("column_type: {:?}", col_type);
         println!("{}", s2);
-        f.write_all(s2.as_bytes());
-        f.write_all(b"\r\n");
+        dump_fl.write_all(s2.as_bytes());
+        dump_fl.write_all(b"\r\n");
 
 
         //3 - column value
@@ -90,8 +91,9 @@ pub extern "C" fn ex4_test(fcinfo: FunctionCallInfo) -> Datum {
             let col_val_ptr: Datum = SPI_getbinval(ret_tuple, tup_desc, x + 1, &mut is_null);
             if !is_null {
               let sz = get_var_size_4b(col_val_ptr);
-              println!("VARSIZE_4B {:?}", sz);
-              println!("VARSIZE_4B without header {:?}", sz - VAR_HEADER_SIZE); // actual size
+              let data_sz = sz - VAR_HEADER_SIZE;
+              // println!("VARSIZE_4B {:?}", sz);
+              // println!("VARSIZE_4B without header {:?}", sz - VAR_HEADER_SIZE); // actual size
 
 
               let col_val_ptr2 = &(col_val_ptr + VAR_HEADER_SIZE) as *const usize;
@@ -101,37 +103,24 @@ pub extern "C" fn ex4_test(fcinfo: FunctionCallInfo) -> Datum {
               let a11_1 = std::slice::from_raw_parts(col_val_ptr2 , sz - VAR_HEADER_SIZE);
               println!("a11_1 len without header {:?}", a11_1.len());
 
-              // let a2: *const i8 = get_var_data_4b(col_val_ptr);
               let a2: *const u8 = get_var_data_4b(col_val_ptr);
               println!("a2 {:?}", a2);
 
-              // let a2_1 = get_var_data_4b_2(col_val_ptr, sz - VAR_HEADER_SIZE);
-              // assert_eq!(a2_1.len(), sz - VAR_HEADER_SIZE);
-              // println!("[OK] a2_1 == (sz - VAR_HEADER_SIZE); {:?}", sz - VAR_HEADER_SIZE);
 
-              let a2_1 = ::std::slice::from_raw_parts(a2, sz - VAR_HEADER_SIZE);
-              let a2_2 = ::std::slice::from_raw_parts(a2, 10);
 
               // re-create image, to reassure that no bytes get lost
-              let file_full_path = format!("/Users/alex/projects/rust/pgsql__workspace/rust_lang_ext__workspace/pgsql_ext_core/data/{}.jpg", my_uuid);
-              let mut f1 = File::create(file_full_path).unwrap();
-              f1.write_all(a2_1).expect("unable to write binary data to file");
+              let img_file_full_path = format!("/Users/alex/projects/rust/pgsql__workspace/rust_lang_ext__workspace/pgsql_ext_core/data/{}.svg", my_uuid);
+              let mut img_fl = File::create(img_file_full_path).unwrap();
+              let a2_1 = ::std::slice::from_raw_parts(a2, data_sz);
+              img_fl.write_all(a2_1).expect("unable to write binary data to file");
 
 
-
-              // base64
-              // let a = b"hello world";
-              // let b = "aGVsbG8gd29ybGQ=";
-
-              // assert_eq!(encode(a), b);
-              // assert_eq!(a, &decode(b).unwrap()[..]);
-
-
-            let b64_val = base64::encode(a2_2);
-            let s1 = format!("column_value: {:?}", b64_val);
-            println!("b64_val: {:?}", s1);
-
-
+              //
+              //base64
+              //
+              let a2_2 = ::std::slice::from_raw_parts(a2, 10);
+              let b64_val = base64::encode(a2_2);
+              println!("b64_val: {:?}", format!("column_value: {:?}", b64_val));
             } else {
               println!("column_value is null");
             }
@@ -147,7 +136,7 @@ pub extern "C" fn ex4_test(fcinfo: FunctionCallInfo) -> Datum {
             };
 
             println!("{}", s3);
-            f.write_all(s3.as_bytes());
+            dump_fl.write_all(s3.as_bytes());
           }
         }
 
@@ -156,8 +145,7 @@ pub extern "C" fn ex4_test(fcinfo: FunctionCallInfo) -> Datum {
         let rd_id = (*(*trig_data).tg_relation).rd_id;
         let pkattnos: *mut Bitmapset = get_primary_key_attnos(rd_id, false, &mut c_odi);
         if !pkattnos.is_null() {
-          const initial_rel_id: i32 = -1;
-          let mut rel_id_i = bms_next_member(pkattnos, initial_rel_id);
+          let mut rel_id_i = bms_next_member(pkattnos, INITIAL_REL_ID);
           while rel_id_i >= 0 {
             let col_idx: i32  = rel_id_i + FirstLowInvalidHeapAttributeNumber;
             println!("primary key col_idx: {}", col_idx);
@@ -166,11 +154,11 @@ pub extern "C" fn ex4_test(fcinfo: FunctionCallInfo) -> Datum {
           }
 
         } else {
-            println!("get_primary_key_attnos NUL");
+          println!("get_primary_key_attnos NUL");
         }
 
         println!("\r\n");
-        f.write_all(b"\r\n\r\n");
+        dump_fl.write_all(b"\r\n\r\n");
       }
 
       ret_tuple
@@ -188,6 +176,7 @@ pub extern "C" fn ex4_test(fcinfo: FunctionCallInfo) -> Datum {
 // #define VARSIZE_4B(PTR)  ((((varattrib_4b *) (PTR))->va_4byte.va_header >> 2) & 0x3FFFFFFF)
 const SHIFT_VAL1: u32  = 2;
 const SHIFT_VAL2: u32 = 0x3FFFFFFF;
+
 fn get_var_size_4b(ptr: Datum) -> usize {
   let mut _ptr1;
   let ptr1 = unsafe {
@@ -195,7 +184,6 @@ fn get_var_size_4b(ptr: Datum) -> usize {
       _ptr1.as_mut()
   };
 
-  // NOTE
   // this works as is
   // but if something begins to looks off, try to use pointer de-refferencing instead:
   // (*ptr1).va_4byte
