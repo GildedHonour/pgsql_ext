@@ -50,6 +50,21 @@ pub extern "C" fn ex4_test(fcinfo: FunctionCallInfo) -> Datum {
       let file_full_path: &str = file_full_path_c_str.to_str().unwrap();
       println!("config > file_full_path: {}", file_full_path);
 
+      //
+      // db, schema, table
+      //
+      let curr_db_ptr = current_database(fcinfo) as *const c_char;
+      let curr_db: &CStr = CStr::from_ptr(curr_db_ptr);
+      println!("database: {:?}", curr_db);
+
+      let tbl_ptr = SPI_getrelname((*trig_data).tg_relation);
+      let tbl: &CStr = CStr::from_ptr(tbl_ptr);
+      println!("table: {:?}", tbl);
+
+      let schema_ptr = SPI_getnspname((*trig_data).tg_relation);
+      let schema: &CStr = CStr::from_ptr(schema_ptr);
+      println!("schema: {:?}", schema);
+
 
 
       let ret_tuple: HeapTuple = (*trig_data).tg_trigtuple;

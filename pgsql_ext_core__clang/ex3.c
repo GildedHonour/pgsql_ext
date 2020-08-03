@@ -13,6 +13,8 @@
 #include "access/htup_details.h"
 #include "access/sysattr.h"
 
+// #include "settings.h"
+
 #include <string.h>
 #include <math.h>
 #include <stdio.h>
@@ -30,6 +32,8 @@ extern Bitmapset *get_primary_key_attnos(Oid relid, bool deferrableOk, Oid *cons
 extern int bms_num_members(const Bitmapset *a);
 extern int bms_next_member(const Bitmapset *a, int prevbit);
 
+            // extern PsqlSettings pset;
+
 char* generate_uuid(void);
 void write_data_to_file(void);
 
@@ -39,9 +43,6 @@ PG_FUNCTION_INFO_V1(ex3_test);
 static int var1 = 1;
 
 Datum ex3_test(PG_FUNCTION_ARGS) {
-    ++var1;
-    elog(INFO, "static var1: %d", var1);
-
     TriggerData * trigdata = (TriggerData *) fcinfo->context;
     HeapTuple rettuple = trigdata->tg_trigtuple;
 
@@ -51,6 +52,21 @@ Datum ex3_test(PG_FUNCTION_ARGS) {
 
     if (TRIGGER_FIRED_BY_INSERT(trigdata->tg_event)) {
         TupleDesc tupdesc = trigdata->tg_relation->rd_att;
+
+
+                        // if (fcinfo->pset != NULL) {
+                        //     elog(INFO, "pset isn't NULL");
+                        // }
+
+
+
+        // name of table
+        char *tbl = SPI_getrelname(trigdata->tg_relation);
+        elog(INFO, "table: %s", tbl);
+        char *schema = SPI_getnspname(trigdata->tg_relation);
+        elog(INFO, "schema: %s", schema);
+
+
         bool isnull1, isnull2, isnull3, isnull4, isnull5, isnull5_2, isnull5_3 = false;
         uint32 x = rettuple->t_len;
 
