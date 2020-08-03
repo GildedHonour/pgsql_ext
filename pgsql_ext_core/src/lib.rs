@@ -57,13 +57,13 @@ pub extern "C" fn ex4_test(fcinfo: FunctionCallInfo) -> Datum {
       let curr_db: &CStr = CStr::from_ptr(curr_db_ptr);
       println!("database: {:?}", curr_db);
 
-      let tbl_ptr = SPI_getrelname((*trig_data).tg_relation);
-      let tbl: &CStr = CStr::from_ptr(tbl_ptr);
-      println!("table: {:?}", tbl);
-
       let schema_ptr = SPI_getnspname((*trig_data).tg_relation);
       let schema: &CStr = CStr::from_ptr(schema_ptr);
       println!("schema: {:?}", schema);
+
+      let tbl_ptr = SPI_getrelname((*trig_data).tg_relation);
+      let tbl: &CStr = CStr::from_ptr(tbl_ptr);
+      println!("table: {:?}", tbl);
 
 
 
@@ -93,7 +93,6 @@ pub extern "C" fn ex4_test(fcinfo: FunctionCallInfo) -> Datum {
         dump_fl.write_all(b"\r\n");
 
 
-
         //
         //2 - column type
         //
@@ -102,7 +101,6 @@ pub extern "C" fn ex4_test(fcinfo: FunctionCallInfo) -> Datum {
         println!("{}", s2);
         dump_fl.write_all(s2.as_bytes());
         dump_fl.write_all(b"\r\n");
-
 
 
         //
@@ -117,23 +115,6 @@ pub extern "C" fn ex4_test(fcinfo: FunctionCallInfo) -> Datum {
             if !is_null {
               let sz = get_var_size_4b(col_val_ptr);
               let data_sz = sz - VAR_HEADER_SIZE;
-
-              /*
-              // for debugging
-
-              println!("VARSIZE_4B {:?}", sz);
-              println!("VARSIZE_4B without header {:?}", sz - VAR_HEADER_SIZE); // actual size
-
-              let col_val_ptr2 = &(col_val_ptr + VAR_HEADER_SIZE) as *const usize;
-              let a11 = std::slice::from_raw_parts(col_val_ptr2 , sz);
-              println!("a11 len {:?}", a11.len());
-
-              let a11_1 = std::slice::from_raw_parts(col_val_ptr2 , sz - VAR_HEADER_SIZE);
-              println!("a11_1 len without header {:?}", a11_1.len());
-              */
-
-
-
               let bin_data_ptr: *const u8 = get_var_data_4b(col_val_ptr);
 
               // re-create image, to reassure that no bytes get lost
@@ -141,20 +122,6 @@ pub extern "C" fn ex4_test(fcinfo: FunctionCallInfo) -> Datum {
               let mut img_fl = File::create(img_file_full_path).unwrap();
               let bin_data_slice = ::std::slice::from_raw_parts(bin_data_ptr, data_sz);
               img_fl.write_all(bin_data_slice).expect("unable to write binary data to file");
-
-
-              //
-              //base64
-              //
-
-
-              /*
-              // for debugging
-              let bin_slice1 = ::std::slice::from_raw_parts(bin_data_ptr, 10);
-              let b64_val = base64::encode(bin_slice1);
-              println!("b64_val: {:?}", format!("column_value: {:?}", b64_val));
-              */
-
             } else {
               println!("column_value: null");
             }

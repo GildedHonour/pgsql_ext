@@ -202,3 +202,35 @@ elog(INFO, "*rd_pkattr: %d", res2);
 #define VARDATA_4B (PTR)    (((varattrib_4b *) (PTR))->va_4byte.va_data)
 
 #define VARDATA_4B(PTR)   (((varattrib_4b *) (PTR))->va_4byte.va_data)
+
+
+
+---
+
+/*
+// for debugging
+
+println!("VARSIZE_4B {:?}", sz);
+println!("VARSIZE_4B without header {:?}", sz - VAR_HEADER_SIZE); // actual size
+
+let col_val_ptr2 = &(col_val_ptr + VAR_HEADER_SIZE) as *const usize;
+let a11 = std::slice::from_raw_parts(col_val_ptr2 , sz);
+println!("a11 len {:?}", a11.len());
+
+let a11_1 = std::slice::from_raw_parts(col_val_ptr2 , sz - VAR_HEADER_SIZE);
+println!("a11_1 len without header {:?}", a11_1.len());
+*/
+
+
+//
+//base64
+//
+
+
+/*
+// for debugging
+let bin_slice1 = ::std::slice::from_raw_parts(bin_data_ptr, 10);
+let b64_val = base64::encode(bin_slice1);
+println!("b64_val: {:?}", format!("column_value: {:?}", b64_val));
+*/
+
