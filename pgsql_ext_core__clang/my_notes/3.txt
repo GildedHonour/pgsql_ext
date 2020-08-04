@@ -234,3 +234,11 @@ let b64_val = base64::encode(bin_slice1);
 println!("b64_val: {:?}", format!("column_value: {:?}", b64_val));
 */
 
+
+// let a = b"hello world";
+// let b = "aGVsbG8gd29ybGQ=";
+
+// assert_eq!(encode(a), b);
+// assert_eq!(a, &decode(b).unwrap()[..]);
+
+

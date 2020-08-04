@@ -9,6 +9,8 @@ use std::io::Write;
 use std::ffi::{CStr, CString};
 use std::os::raw::{c_char};
 use std::str;
+use std::collections::HashMap;
+use std::vec::Vec;
 
 use uuid::Uuid;
 use base64::{encode, decode};
@@ -42,40 +44,70 @@ pub extern "C" fn ex4_test(fcinfo: FunctionCallInfo) -> Datum {
       // postgresql.conf
       // a key has to be in the format: 'prefix.value = 123'
       //
-      let cfg_key_raw = CString::new(format!("{}.data_dir_path1", CONFIG_DATA_PREFIX)).unwrap();
+      let cfg_key_raw = CString::new(format!("{}.data_dir_path", CONFIG_DATA_PREFIX)).unwrap();
       let cfg_key: *const c_char = cfg_key_raw.as_ptr() as *const c_char;
       let file_full_path_raw = GetConfigOptionByName(cfg_key, &mut std::ptr::null(), false);
 
       let file_full_path_c_str: &CStr = unsafe { CStr::from_ptr(file_full_path_raw) };
-      let file_full_path: &str = file_full_path_c_str.to_str().unwrap();
-      println!("config > file_full_path: {}", file_full_path);
+      let full_data_dir_path: &str = file_full_path_c_str.to_str().unwrap();
+      // println!("config > full_data_dir_path: {}", full_data_dir_path);
+
+      let uuid1 = Uuid::new_v4();
+      let mut dump_fl = File::create(format!("{}/{}.txt", full_data_dir_path, uuid1)).unwrap();
+
 
       //
       // db, schema, table
       //
       let curr_db_ptr = current_database(fcinfo) as *const c_char;
       let curr_db: &CStr = CStr::from_ptr(curr_db_ptr);
-      println!("database: {:?}", curr_db);
+      //println!("database: {:?}", curr_db);
 
       let schema_ptr = SPI_getnspname((*trig_data).tg_relation);
       let schema: &CStr = CStr::from_ptr(schema_ptr);
-      println!("schema: {:?}", schema);
+      //println!("schema: {:?}", schema);
 
       let tbl_ptr = SPI_getrelname((*trig_data).tg_relation);
       let tbl: &CStr = CStr::from_ptr(tbl_ptr);
-      println!("table: {:?}", tbl);
+      //println!("table: {:?}", tbl);
+
+      //
+      //primary keys
+      //
+      let mut c_odi: Oid = 0;
+      let rd_id = (*(*trig_data).tg_relation).rd_id;
+      let pkattnos: *mut Bitmapset = get_primary_key_attnos(rd_id, false, &mut c_odi);
+      let mut pr_idx_s = Vec::new();
+      if !pkattnos.is_null() {
+        let mut rel_id_i = bms_next_member(pkattnos, INITIAL_REL_ID);
+        while rel_id_i >= 0 {
+          let col_idx: i32  = rel_id_i + FirstLowInvalidHeapAttributeNumber;
+          pr_idx_s.push(col_idx);
+          rel_id_i = bms_next_member(pkattnos , rel_id_i);
+        }
+      } else {
+        println!("get_primary_key_attnos NUL");
+      }
+
+
+
+      let s = format!("{};{};{};{};\r\n", curr_db.to_str().unwrap(), schema.to_str().unwrap(), tbl.to_str().unwrap(), pr_idx_s.len());
+      dump_fl.write_all(s.as_bytes());
+
+
 
 
 
       let ret_tuple: HeapTuple = (*trig_data).tg_trigtuple;
       let tup_desc: TupleDesc = (*(*trig_data).tg_relation).rd_att;
 
-      let my_uuid = Uuid::new_v4();
-      //TODO read from config
-      let mut dump_fl = File::create(format!("/Users/alex/projects/rust/pgsql__workspace/rust_lang_ext__workspace/pgsql_ext_core/data/{}.txt", my_uuid)).unwrap();
 
       let col_num = (*tup_desc).natts;
+      let mut pr_s = HashMap::new();
+
       for x in 0..col_num {
+        dump_fl.write_all(format!("column index: {}", x).as_bytes());
+        dump_fl.write_all(b"\r\n");
 
         //
         //1 - column name
@@ -118,47 +150,39 @@ pub extern "C" fn ex4_test(fcinfo: FunctionCallInfo) -> Datum {
               let bin_data_ptr: *const u8 = get_var_data_4b(col_val_ptr);
 
               // re-create image, to reassure that no bytes get lost
+              /*
               let img_file_full_path = format!("/Users/alex/projects/rust/pgsql__workspace/rust_lang_ext__workspace/pgsql_ext_core/data/{}.svg", my_uuid);
               let mut img_fl = File::create(img_file_full_path).unwrap();
               let bin_data_slice = ::std::slice::from_raw_parts(bin_data_ptr, data_sz);
               img_fl.write_all(bin_data_slice).expect("unable to write binary data to file");
+              */
+
+
             } else {
               println!("column_value: null");
             }
           },
           _ => {
-            println!("column_type == {}", col_type_str_slice);
             let maybe_val = SPI_getvalue(ret_tuple, tup_desc, x + 1);
-            let s3 = if !maybe_val.is_null() {
-              let col_val: &CStr = CStr::from_ptr(maybe_val);
-              format!("column_value: {:?}", col_val)
+            let col_val = if !maybe_val.is_null() {
+              let col_val_str: &CStr = CStr::from_ptr(maybe_val);
+            //   format!("column_value: {:?}", col_val_str)
+                 Some(col_val_str.to_str.unwrap())
             } else {
-              format!("column_value: null")
+            //   format!("column_value: null")
+                 None
             };
 
-            println!("{}", s3);
-            dump_fl.write_all(s3.as_bytes());
+            // println!("{}", s3);
+            // dump_fl.write_all(s3.as_bytes());
+
+
+            if pr_idx_s.len() > 0 {
+              if pr_idx_s.iter().any(|it| *it == (x + 1)) {
+                pr_s.insert(col_name, col_val);
+              }
+            }
           }
-        }
-
-
-        //
-        //4   primary keys
-        //
-        let mut c_odi: Oid = 0;
-        let rd_id = (*(*trig_data).tg_relation).rd_id;
-        let pkattnos: *mut Bitmapset = get_primary_key_attnos(rd_id, false, &mut c_odi);
-        if !pkattnos.is_null() {
-          let mut rel_id_i = bms_next_member(pkattnos, INITIAL_REL_ID);
-          while rel_id_i >= 0 {
-            let col_idx: i32  = rel_id_i + FirstLowInvalidHeapAttributeNumber;
-            println!("primary key col_idx: {}", col_idx);
-
-            rel_id_i = bms_next_member(pkattnos , rel_id_i);
-          }
-
-        } else {
-          println!("get_primary_key_attnos NUL");
         }
 
         println!("\r\n");
