@@ -106,8 +106,8 @@ pub extern "C" fn ex4_test(fcinfo: FunctionCallInfo) -> Datum {
       let mut pr_s = HashMap::new();
 
       for x in 0..col_num {
-        dump_fl.write_all(format!("column index: {}", x).as_bytes());
-        dump_fl.write_all(b"\r\n");
+        // dump_fl.write_all(format!("column index: {}", x).as_bytes());
+        // dump_fl.write_all(b"\r\n");
 
         //
         //1 - column name
@@ -120,9 +120,9 @@ pub extern "C" fn ex4_test(fcinfo: FunctionCallInfo) -> Datum {
           map(|x| x as char).
           collect();
         let s1 = format!("column_name: {:?}", col_name);
-        println!("{}", s1);
-        dump_fl.write_all(s1.as_bytes());
-        dump_fl.write_all(b"\r\n");
+        // println!("{}", s1);
+        // dump_fl.write_all(s1.as_bytes());
+        // dump_fl.write_all(b"\r\n");
 
 
         //
@@ -130,9 +130,9 @@ pub extern "C" fn ex4_test(fcinfo: FunctionCallInfo) -> Datum {
         //
         let col_type: &CStr = CStr::from_ptr(SPI_gettype(tup_desc, x + 1));
         let s2 = format!("column_type: {:?}", col_type);
-        println!("{}", s2);
-        dump_fl.write_all(s2.as_bytes());
-        dump_fl.write_all(b"\r\n");
+        // println!("{}", s2);
+        // dump_fl.write_all(s2.as_bytes());
+        // dump_fl.write_all(b"\r\n");
 
 
         //
@@ -167,7 +167,7 @@ pub extern "C" fn ex4_test(fcinfo: FunctionCallInfo) -> Datum {
             let col_val = if !maybe_val.is_null() {
               let col_val_str: &CStr = CStr::from_ptr(maybe_val);
             //   format!("column_value: {:?}", col_val_str)
-                 Some(col_val_str.to_str.unwrap())
+                 Some(col_val_str.to_str().unwrap())
             } else {
             //   format!("column_value: null")
                  None
@@ -185,9 +185,20 @@ pub extern "C" fn ex4_test(fcinfo: FunctionCallInfo) -> Datum {
           }
         }
 
-        println!("\r\n");
-        dump_fl.write_all(b"\r\n\r\n");
+        // dump_fl.write_all(b"\r\n\r\n");
       }
+
+      for (k, v) in pr_s.iter() {
+        let v2 = match v {
+          Some(x) => x,
+          None => "?"
+        };
+
+        dump_fl.write_all(format!("{}={};\r\n", k, v2).as_bytes());
+      }
+
+      dump_fl.write_all(b"\r\n");
+
 
       ret_tuple
     } else {
