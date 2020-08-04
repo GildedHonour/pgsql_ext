@@ -86,7 +86,6 @@ pub extern "C" fn ex4_test(fcinfo: FunctionCallInfo) -> Datum {
       let s = format!("{};{};{};{};\r\n", curr_db.to_str().unwrap(), schema.to_str().unwrap(), tbl.to_str().unwrap(), pr_idx_s.len());
       dump_fl.write_all(s.as_bytes());
 
-
       let ret_tuple: HeapTuple = (*trig_data).tg_trigtuple;
       let tup_desc: TupleDesc = (*(*trig_data).tg_relation).rd_att;
 
