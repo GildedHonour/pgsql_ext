@@ -30,8 +30,6 @@ PG_MODULE_MAGIC!();
 PG_FUNCTION_INFO_V1!(pg_finfo_ex4_test);
 
 
-//NOTE: refactoring will be required once all works well
-
 #[no_mangle]
 pub extern "C" fn ex4_test(fcinfo: FunctionCallInfo) -> Datum {
   let res = unsafe {
@@ -50,7 +48,6 @@ pub extern "C" fn ex4_test(fcinfo: FunctionCallInfo) -> Datum {
 
       let file_full_path_c_str: &CStr = unsafe { CStr::from_ptr(file_full_path_raw) };
       let full_data_dir_path: &str = file_full_path_c_str.to_str().unwrap();
-      // println!("config > full_data_dir_path: {}", full_data_dir_path);
 
       let uuid1 = Uuid::new_v4();
       let mut dump_fl = File::create(format!("{}/{}.txt", full_data_dir_path, uuid1)).unwrap();
@@ -61,15 +58,12 @@ pub extern "C" fn ex4_test(fcinfo: FunctionCallInfo) -> Datum {
       //
       let curr_db_ptr = current_database(fcinfo) as *const c_char;
       let curr_db: &CStr = CStr::from_ptr(curr_db_ptr);
-      //println!("database: {:?}", curr_db);
 
       let schema_ptr = SPI_getnspname((*trig_data).tg_relation);
       let schema: &CStr = CStr::from_ptr(schema_ptr);
-      //println!("schema: {:?}", schema);
 
       let tbl_ptr = SPI_getrelname((*trig_data).tg_relation);
       let tbl: &CStr = CStr::from_ptr(tbl_ptr);
-      //println!("table: {:?}", tbl);
 
       //
       //primary keys
@@ -89,26 +83,17 @@ pub extern "C" fn ex4_test(fcinfo: FunctionCallInfo) -> Datum {
         println!("get_primary_key_attnos NUL");
       }
 
-
-
       let s = format!("{};{};{};{};\r\n", curr_db.to_str().unwrap(), schema.to_str().unwrap(), tbl.to_str().unwrap(), pr_idx_s.len());
       dump_fl.write_all(s.as_bytes());
-
-
-
 
 
       let ret_tuple: HeapTuple = (*trig_data).tg_trigtuple;
       let tup_desc: TupleDesc = (*(*trig_data).tg_relation).rd_att;
 
-
       let col_num = (*tup_desc).natts;
       let mut pr_s = HashMap::new();
 
       for x in 0..col_num {
-        // dump_fl.write_all(format!("column index: {}", x).as_bytes());
-        // dump_fl.write_all(b"\r\n");
-
         //
         //1 - column name
         //
@@ -119,7 +104,9 @@ pub extern "C" fn ex4_test(fcinfo: FunctionCallInfo) -> Datum {
           filter(|x| *x != 0).
           map(|x| x as char).
           collect();
-        let s1 = format!("column_name: {:?}", col_name);
+
+        // TODO debug
+        // let s1 = format!("column_name: {:?}", col_name);
         // println!("{}", s1);
         // dump_fl.write_all(s1.as_bytes());
         // dump_fl.write_all(b"\r\n");
@@ -129,7 +116,9 @@ pub extern "C" fn ex4_test(fcinfo: FunctionCallInfo) -> Datum {
         //2 - column type
         //
         let col_type: &CStr = CStr::from_ptr(SPI_gettype(tup_desc, x + 1));
-        let s2 = format!("column_type: {:?}", col_type);
+
+        // TODO debug
+        // let s2 = format!("column_type: {:?}", col_type);
         // println!("{}", s2);
         // dump_fl.write_all(s2.as_bytes());
         // dump_fl.write_all(b"\r\n");
@@ -149,33 +138,20 @@ pub extern "C" fn ex4_test(fcinfo: FunctionCallInfo) -> Datum {
               let data_sz = sz - VAR_HEADER_SIZE;
               let bin_data_ptr: *const u8 = get_var_data_4b(col_val_ptr);
 
-              // re-create image, to reassure that no bytes get lost
-              /*
-              let img_file_full_path = format!("/Users/alex/projects/rust/pgsql__workspace/rust_lang_ext__workspace/pgsql_ext_core/data/{}.svg", my_uuid);
-              let mut img_fl = File::create(img_file_full_path).unwrap();
               let bin_data_slice = ::std::slice::from_raw_parts(bin_data_ptr, data_sz);
-              img_fl.write_all(bin_data_slice).expect("unable to write binary data to file");
-              */
-
-
-            } else {
-              println!("column_value: null");
+              let b64_val = base64::encode(bin_data_slice);
+              dump_fl.write_all(b64_val.as_bytes());
+              dump_fl.write_all(b"\r\n");
             }
           },
           _ => {
             let maybe_val = SPI_getvalue(ret_tuple, tup_desc, x + 1);
             let col_val = if !maybe_val.is_null() {
               let col_val_str: &CStr = CStr::from_ptr(maybe_val);
-            //   format!("column_value: {:?}", col_val_str)
-                 Some(col_val_str.to_str().unwrap())
+              Some(col_val_str.to_str().unwrap())
             } else {
-            //   format!("column_value: null")
-                 None
+              None
             };
-
-            // println!("{}", s3);
-            // dump_fl.write_all(s3.as_bytes());
-
 
             if pr_idx_s.len() > 0 {
               if pr_idx_s.iter().any(|it| *it == (x + 1)) {
@@ -184,8 +160,6 @@ pub extern "C" fn ex4_test(fcinfo: FunctionCallInfo) -> Datum {
             }
           }
         }
-
-        // dump_fl.write_all(b"\r\n\r\n");
       }
 
       for (k, v) in pr_s.iter() {
@@ -198,8 +172,6 @@ pub extern "C" fn ex4_test(fcinfo: FunctionCallInfo) -> Datum {
       }
 
       dump_fl.write_all(b"\r\n");
-
-
       ret_tuple
     } else {
       //TODO here 'elog' should be used instead, but it doesn't exist in bindings.rs
