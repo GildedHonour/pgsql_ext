@@ -80,18 +80,28 @@ pub extern "C" fn ex4_test(fcinfo: FunctionCallInfo) -> Datum {
           rel_id_i = bms_next_member(pkattnos , rel_id_i);
         }
       } else {
-        println!("get_primary_key_attnos NUL");
+        println!("no primary keys");
       }
 
       let s = format!("{};{};{};{};\r\n", curr_db.to_str().unwrap(), schema.to_str().unwrap(), tbl.to_str().unwrap(), pr_idx_s.len());
       dump_fl.write_all(s.as_bytes());
 
+
+      //
+      // transaction id
+      //
+      let tx_id = txid_current(fcinfo);
+      let tx_id_s = format!("tx_id={};\r\n", tx_id);
+      dump_fl.write_all(tx_id_s.as_bytes());
+
+
+      //
+      // column values
+      //
       let ret_tuple: HeapTuple = (*trig_data).tg_trigtuple;
       let tup_desc: TupleDesc = (*(*trig_data).tg_relation).rd_att;
-
       let col_num = (*tup_desc).natts;
       let mut pr_s = HashMap::new();
-
       for x in 0..col_num {
         //
         //1 - column name
@@ -129,7 +139,6 @@ pub extern "C" fn ex4_test(fcinfo: FunctionCallInfo) -> Datum {
         let col_type_str_slice: &str = col_type.to_str().unwrap();
         match col_type_str_slice {
           _ if col_type_str_slice == "bytea" => {
-            println!("column_type == bytea");
             let mut is_null: bool = true;
             let col_val_ptr: Datum = SPI_getbinval(ret_tuple, tup_desc, x + 1, &mut is_null);
             if !is_null {
